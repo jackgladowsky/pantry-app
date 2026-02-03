@@ -53,7 +53,7 @@ Use the recipe IDs exactly as provided. If suggesting a custom meal not in their
         "X-Title": "Pantry App",
       },
       body: JSON.stringify({
-        model: "google/gemini-flash-1.5-8b",
+        model: "google/gemini-flash-1.5",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 1000,
       }),

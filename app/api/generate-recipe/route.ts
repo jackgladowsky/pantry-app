@@ -50,7 +50,7 @@ Rules:
         "X-Title": "Pantry App",
       },
       body: JSON.stringify({
-        model: "google/gemini-flash-1.5-8b",
+        model: "google/gemini-flash-1.5",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 1500,
       }),

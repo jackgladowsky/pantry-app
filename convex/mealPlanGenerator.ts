@@ -65,7 +65,7 @@ export const generate = action({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-flash-1.5-8b",
+        model: "google/gemini-flash-1.5",
         messages: [
           {
             role: "system",
