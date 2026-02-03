@@ -713,7 +713,7 @@ function EditRecipeView({ recipe, onSave, onCancel, onDelete }: { recipe: any; o
   const [notes, setNotes] = useState(recipe.notes || "");
 
   const handleSave = () => {
-    const parsedIngredients = ingredients.split("\n").filter(l => l.trim()).map(line => {
+    const parsedIngredients = ingredients.split("\n").filter((l: string) => l.trim()).map((line: string) => {
       const optional = line.includes("(optional)");
       const clean = line.replace("(optional)", "").trim();
       const match = clean.match(/^([\d\/\s\w]+?)\s+(.+)$/);
@@ -727,9 +727,9 @@ function EditRecipeView({ recipe, onSave, onCancel, onDelete }: { recipe: any; o
       servings,
       prepTime,
       cookTime,
-      tags: tags.split(",").map(t => t.trim()).filter(Boolean),
+      tags: tags.split(",").map((t: string) => t.trim()).filter((x: string) => Boolean(x)),
       ingredients: parsedIngredients,
-      instructions: instructions.split("\n\n").filter(s => s.trim()),
+      instructions: instructions.split("\n\n").filter((s: string) => s.trim()),
       notes: notes || undefined,
     });
   };
@@ -914,7 +914,7 @@ function MealPlannerView() {
         planSettings.useExpiring && "Prioritize using ingredients that are expiring soon",
         `Plan for ${planSettings.householdSize} people`,
         planSettings.eatingOutDays > 0 && `Include ${planSettings.eatingOutDays} eating out / takeout day${planSettings.eatingOutDays > 1 ? 's' : ''}`,
-      ].filter(Boolean).join(". ");
+      ].filter((x): x is string => Boolean(x)).join(". ");
       
       const res = await fetch("/api/plan-week", {
         method: "POST",
@@ -952,11 +952,11 @@ function MealPlannerView() {
   const addMealToDay = async (date: string, recipeId?: string, customMeal?: string) => {
     const existingMeals = getMealsForDate(date);
     const newMeal = {
-      type: "dinner",
-      recipeId: recipeId || undefined,
+      type: "dinner" as const,
+      recipeId: recipeId as Id<"recipes"> | undefined,
       customMeal: customMeal || undefined,
     };
-    await setMeals({ date, meals: [...existingMeals, newMeal] });
+    await setMeals({ date, meals: [...existingMeals, newMeal] as any });
     setShowRecipePicker(false);
     setSelectedDay(null);
   };
