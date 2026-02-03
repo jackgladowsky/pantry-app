@@ -219,7 +219,98 @@ function Dashboard({ setActiveTab, setSelectedRecipe }: {
           </div>
         </section>
       )}
+
+      {/* AI Chef Suggestions */}
+      <ChefAgent items={items} expiring={expiring} recipes={canMake} />
     </div>
+  );
+}
+
+function ChefAgent({ items, expiring, recipes }: { items: any; expiring: any; recipes: any }) {
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const getSuggestion = async () => {
+    if (!items?.length) {
+      setError("Add some items to your pantry first!");
+      return;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const res = await fetch("/api/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pantryItems: items || [],
+          recipes: recipes || [],
+          expiringSoon: expiring || [],
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.error) {
+        setError(data.error);
+      } else {
+        setSuggestion(data.suggestion);
+      }
+    } catch (err) {
+      setError("Failed to get suggestions");
+    }
+    
+    setLoading(false);
+  };
+
+  return (
+    <section className="bg-gradient-to-br from-violet-500/10 to-purple-600/10 border border-violet-500/20 rounded-2xl p-6">
+      <div className="flex items-start gap-4">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+          <UtensilsCrossed className="w-6 h-6 text-white" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-lg mb-1">AI Chef</h3>
+          <p className="text-sm text-slate-400 mb-4">Get personalized meal suggestions based on what you have</p>
+          
+          {!suggestion && !loading && (
+            <button
+              onClick={getSuggestion}
+              className="bg-violet-500 hover:bg-violet-600 px-4 py-2 rounded-xl font-medium transition-colors shadow-lg shadow-violet-500/20"
+            >
+              What should I cook?
+            </button>
+          )}
+          
+          {loading && (
+            <div className="flex items-center gap-2 text-violet-400">
+              <div className="w-5 h-5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+              Thinking...
+            </div>
+          )}
+          
+          {error && (
+            <p className="text-red-400 text-sm">{error}</p>
+          )}
+          
+          {suggestion && (
+            <div className="space-y-4">
+              <div className="bg-slate-800/50 rounded-xl p-4 text-slate-200 whitespace-pre-wrap text-sm leading-relaxed">
+                {suggestion}
+              </div>
+              <button
+                onClick={() => { setSuggestion(null); getSuggestion(); }}
+                className="text-sm text-violet-400 hover:text-violet-300"
+              >
+                ↻ Get another suggestion
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -251,12 +342,30 @@ function PantryView() {
   const [showAdd, setShowAdd] = useState(false);
   const [editingItem, setEditingItem] = useState<Doc<"pantryItems"> | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"expiry" | "name" | "added" | "location">("expiry");
   const [newItem, setNewItem] = useState({ name: "", quantity: "", location: "fridge", days: 7 });
   
   const filteredItems = items?.filter(item => {
     const matchesLocation = !selectedLocation || item.location === selectedLocation;
     const matchesSearch = !searchQuery || item.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesLocation && matchesSearch;
+  })?.sort((a, b) => {
+    switch (sortBy) {
+      case "expiry":
+        // Items without expiry go last, then sort by soonest first
+        if (!a.expiresAt && !b.expiresAt) return 0;
+        if (!a.expiresAt) return 1;
+        if (!b.expiresAt) return -1;
+        return a.expiresAt - b.expiresAt;
+      case "name":
+        return a.name.localeCompare(b.name);
+      case "added":
+        return b.addedAt - a.addedAt; // newest first
+      case "location":
+        return a.location.localeCompare(b.location);
+      default:
+        return 0;
+    }
   });
   
   const handleAdd = async () => {
@@ -309,6 +418,17 @@ function PantryView() {
             const Icon = loc.icon;
             return <FilterButton key={loc.id} active={selectedLocation === loc.id} onClick={() => setSelectedLocation(loc.id)}><Icon className="w-4 h-4" /> {loc.name}</FilterButton>;
           })}
+        </div>
+      </div>
+
+      {/* Sort options */}
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-slate-400">Sort by:</span>
+        <div className="flex gap-1 bg-slate-800/50 rounded-lg p-1">
+          <button onClick={() => setSortBy("expiry")} className={`px-3 py-1 rounded-md transition-all ${sortBy === "expiry" ? "bg-green-500 text-white" : "text-slate-400 hover:text-white"}`}>Expiring</button>
+          <button onClick={() => setSortBy("name")} className={`px-3 py-1 rounded-md transition-all ${sortBy === "name" ? "bg-green-500 text-white" : "text-slate-400 hover:text-white"}`}>Name</button>
+          <button onClick={() => setSortBy("added")} className={`px-3 py-1 rounded-md transition-all ${sortBy === "added" ? "bg-green-500 text-white" : "text-slate-400 hover:text-white"}`}>Recent</button>
+          <button onClick={() => setSortBy("location")} className={`px-3 py-1 rounded-md transition-all ${sortBy === "location" ? "bg-green-500 text-white" : "text-slate-400 hover:text-white"}`}>Location</button>
         </div>
       </div>
 
