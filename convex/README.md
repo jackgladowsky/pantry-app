@@ -1,90 +1,55 @@
-# Welcome to your Convex functions directory!
+# Convex Backend
 
-Write your Convex functions here.
-See https://docs.convex.dev/functions for more.
+This directory contains all the Convex functions (queries and mutations) that power the Pantry app.
 
-A query function that takes two arguments looks like:
+## Schema
 
-```ts
-// convex/myFunctions.ts
-import { query } from "./_generated/server";
-import { v } from "convex/values";
+Defined in `schema.ts`:
 
-export const myQueryFunction = query({
-  // Validators for arguments.
-  args: {
-    first: v.number(),
-    second: v.string(),
-  },
+- **pantryItems** — Kitchen inventory with location, quantity, expiry
+- **recipes** — Recipes with ingredients, instructions, tags
+- **groceryList** — Shopping list items with checked status
+- **mealPlans** — Daily meal schedules
 
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Read the database as many times as you need here.
-    // See https://docs.convex.dev/database/reading-data.
-    const documents = await ctx.db.query("tablename").collect();
+## Modules
 
-    // Arguments passed from the client are properties of the args object.
-    console.log(args.first, args.second);
+### `pantry.ts`
+- `list` — Get all pantry items
+- `byLocation` — Filter items by location (fridge/freezer/pantry/spices)
+- `expiringSoon` — Items expiring within N days
+- `add` / `update` / `remove` / `use` — CRUD operations
 
-    // Write arbitrary JavaScript here: filter, aggregate, build derived data,
-    // remove non-public properties, or create new objects.
-    return documents;
-  },
-});
+### `recipes.ts`
+- `list` / `get` / `search` — Query recipes
+- `add` / `update` / `remove` — CRUD operations
+- `canMake` — Returns recipes sorted by how many ingredients you're missing
+
+### `groceryList.ts`
+- `list` — Get all grocery items
+- `add` / `toggle` / `update` / `remove` — CRUD operations
+- `clearChecked` — Remove all checked items
+- `addFromRecipe` — Add missing ingredients from a recipe
+
+### `mealPlans.ts`
+- `getByDate` / `getWeek` — Query meal plans
+- `setMeals` / `addMeal` / `removeMeal` / `clearDay` — Manage meals
+- `getGroceryList` — Generate shopping list for planned meals
+
+## Development
+
+```bash
+# Start the Convex dev server (watches for changes)
+npx convex dev
+
+# Push to production
+npx convex deploy
 ```
 
-Using this query function in a React component looks like:
+## Indexes
 
-```ts
-const data = useQuery(api.myFunctions.myQueryFunction, {
-  first: 10,
-  second: "hello",
-});
-```
-
-A mutation function looks like:
-
-```ts
-// convex/myFunctions.ts
-import { mutation } from "./_generated/server";
-import { v } from "convex/values";
-
-export const myMutationFunction = mutation({
-  // Validators for arguments.
-  args: {
-    first: v.string(),
-    second: v.string(),
-  },
-
-  // Function implementation.
-  handler: async (ctx, args) => {
-    // Insert or modify documents in the database here.
-    // Mutations can also read from the database like queries.
-    // See https://docs.convex.dev/database/writing-data.
-    const message = { body: args.first, author: args.second };
-    const id = await ctx.db.insert("messages", message);
-
-    // Optionally, return a value from your mutation.
-    return await ctx.db.get("messages", id);
-  },
-});
-```
-
-Using this mutation function in a React component looks like:
-
-```ts
-const mutation = useMutation(api.myFunctions.myMutationFunction);
-function handleButtonPress() {
-  // fire and forget, the most common way to use mutations
-  mutation({ first: "Hello!", second: "me" });
-  // OR
-  // use the result once the mutation has completed
-  mutation({ first: "Hello!", second: "me" }).then((result) =>
-    console.log(result),
-  );
-}
-```
-
-Use the Convex CLI to push your functions to a deployment. See everything
-the Convex CLI can do by running `npx convex -h` in your project root
-directory. To learn more, launch the docs with `npx convex docs`.
+- `pantryItems.by_location` — Fast filtering by storage location
+- `pantryItems.by_expiry` — Sorted expiry queries
+- `recipes.by_tag` — Filter by tag
+- `recipes.search_name` — Full-text search on recipe names
+- `mealPlans.by_date` — Date-based lookups
+- `groceryList.by_checked` — Filter checked/unchecked items
