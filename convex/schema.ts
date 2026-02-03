@@ -45,7 +45,9 @@ export default defineSchema({
       v.object({
         type: v.string(), // "breakfast" | "lunch" | "dinner"
         recipeId: v.optional(v.id("recipes")),
-        customMeal: v.optional(v.string()), // for non-recipe meals
+        customMeal: v.optional(v.string()), // for non-recipe meals like "Takeout - Thai"
+        isLeftover: v.optional(v.boolean()), // true if this is leftovers from a previous meal
+        isEatingOut: v.optional(v.boolean()), // true for takeout/restaurant
         notes: v.optional(v.string()),
       })
     ),

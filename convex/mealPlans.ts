@@ -36,6 +36,8 @@ export const setMeals = mutation({
         type: v.string(),
         recipeId: v.optional(v.id("recipes")),
         customMeal: v.optional(v.string()),
+        isLeftover: v.optional(v.boolean()),
+        isEatingOut: v.optional(v.boolean()),
         notes: v.optional(v.string()),
       })
     ),
@@ -65,6 +67,8 @@ export const addMeal = mutation({
     type: v.string(),
     recipeId: v.optional(v.id("recipes")),
     customMeal: v.optional(v.string()),
+    isLeftover: v.optional(v.boolean()),
+    isEatingOut: v.optional(v.boolean()),
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

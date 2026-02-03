@@ -78,7 +78,7 @@ export const clearChecked = mutation({
   },
 });
 
-// Add ingredients from a recipe to grocery list
+// Add ingredients from a recipe to grocery list (merges with existing items)
 export const addFromRecipe = mutation({
   args: { recipeId: v.id("recipes") },
   handler: async (ctx, args) => {
@@ -91,17 +91,52 @@ export const addFromRecipe = mutation({
       pantryItems.map((item) => item.name.toLowerCase())
     );
     
+    // Get current grocery list for merging
+    const groceryItems = await ctx.db.query("groceryList").collect();
+    const groceryByName = new Map(
+      groceryItems.map((item) => [item.name.toLowerCase(), item])
+    );
+    
     for (const ingredient of recipe.ingredients) {
-      // Skip if we have it
-      if (pantryNames.has(ingredient.name.toLowerCase())) continue;
+      const nameLower = ingredient.name.toLowerCase();
       
-      await ctx.db.insert("groceryList", {
-        name: ingredient.name,
-        quantity: ingredient.quantity,
-        recipeId: args.recipeId,
-        checked: false,
-        addedAt: Date.now(),
-      });
+      // Skip if we have it in pantry
+      if (pantryNames.has(nameLower)) continue;
+      
+      // Check if already in grocery list
+      const existing = groceryByName.get(nameLower);
+      if (existing) {
+        // Merge quantities if both exist
+        const newQty = mergeQuantities(existing.quantity, ingredient.quantity);
+        await ctx.db.patch(existing._id, { quantity: newQty });
+      } else {
+        await ctx.db.insert("groceryList", {
+          name: ingredient.name,
+          quantity: ingredient.quantity,
+          recipeId: args.recipeId,
+          checked: false,
+          addedAt: Date.now(),
+        });
+      }
     }
   },
 });
+
+// Helper to merge quantity strings (best effort)
+function mergeQuantities(q1: string | undefined, q2: string): string {
+  if (!q1) return q2;
+  
+  // Try to parse numbers and add them
+  const num1 = parseFloat(q1);
+  const num2 = parseFloat(q2);
+  
+  if (!isNaN(num1) && !isNaN(num2)) {
+    // Extract unit from q1 if possible
+    const unit = q1.replace(/[\d.\/\s]+/, '').trim();
+    const sum = num1 + num2;
+    return unit ? `${sum} ${unit}` : `${sum}`;
+  }
+  
+  // Can't merge numerically, just concatenate
+  return `${q1} + ${q2}`;
+}

@@ -235,6 +235,103 @@ const commands = {
   async meals() {
     const subcommand = args[0];
 
+    if (subcommand === "generate") {
+      // AI meal plan generation
+      const householdSize = parseInt(args.find(a => a.startsWith("--people="))?.split("=")[1] || "2");
+      const eatingOutDays = parseInt(args.find(a => a.startsWith("--eating-out="))?.split("=")[1] || "1");
+      const days = parseInt(args.find(a => a.startsWith("--days="))?.split("=")[1] || "7");
+      const quickWeekdays = args.includes("--quick-weekdays");
+      const useExpiring = args.includes("--use-expiring");
+      
+      const today = new Date();
+      const startDate = today.toISOString().split("T")[0];
+      
+      console.log(`🤖 Generating ${days}-day meal plan for ${householdSize} people...`);
+      console.log(`   Eating out: ${eatingOutDays} days`);
+      if (quickWeekdays) console.log(`   Preferring quick meals on weekdays`);
+      if (useExpiring) console.log(`   Prioritizing expiring ingredients`);
+      console.log("");
+      
+      try {
+        const result = await client.action(api.mealPlanGenerator.generate, {
+          daysToEatOut: eatingOutDays,
+          householdSize,
+          mealsPerDay: ["dinner"],
+          preferQuickMeals: quickWeekdays,
+          useExpiring,
+          startDate,
+          numDays: days,
+        });
+        
+        if (result.success) {
+          console.log("✅ Generated meal plan:\n");
+          
+          const recipes = await client.query(api.recipes.list);
+          const recipeMap = Object.fromEntries(recipes.map(r => [r._id, r]));
+          
+          for (const day of result.plan) {
+            const d = new Date(day.date);
+            const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
+            console.log(`${dayName} ${day.date}:`);
+            for (const meal of day.meals) {
+              const recipe = meal.recipeId ? recipeMap[meal.recipeId] : null;
+              const mealName = recipe ? recipe.name : meal.customMeal;
+              const leftover = meal.isLeftover ? " 🔄" : "";
+              const servings = recipe?.servings ? ` (${recipe.servings} servings)` : "";
+              console.log(`  ${meal.type}: ${mealName}${leftover}${servings}`);
+            }
+          }
+          
+          if (result.shoppingNeeded?.length > 0) {
+            console.log("\n🛒 Shopping needed:");
+            for (const item of result.shoppingNeeded) {
+              console.log(`  • ${item}`);
+            }
+          }
+          
+          if (result.notes) {
+            console.log(`\n📝 ${result.notes}`);
+          }
+          
+          console.log("\nApply this plan? Run: pantry meals apply-generated");
+          // Store in temp for apply command
+          const fs = await import("fs/promises");
+          await fs.writeFile("/tmp/pantry-generated-plan.json", JSON.stringify(result));
+        }
+      } catch (err) {
+        console.error("Error generating plan:", err.message);
+        process.exit(1);
+      }
+      return;
+    }
+
+    if (subcommand === "apply-generated") {
+      const fs = await import("fs/promises");
+      try {
+        const data = await fs.readFile("/tmp/pantry-generated-plan.json", "utf-8");
+        const result = JSON.parse(data);
+        
+        const addGrocery = args.includes("--add-grocery");
+        
+        await client.action(api.mealPlanGenerator.applyPlan, {
+          plan: result.plan,
+          addToGroceryList: addGrocery,
+          shoppingNeeded: result.shoppingNeeded,
+        });
+        
+        console.log("✅ Meal plan applied!");
+        if (addGrocery && result.shoppingNeeded?.length > 0) {
+          console.log(`   Added ${result.shoppingNeeded.length} items to grocery list`);
+        }
+        
+        await fs.unlink("/tmp/pantry-generated-plan.json");
+      } catch (err) {
+        console.error("No generated plan to apply. Run: pantry meals generate");
+        process.exit(1);
+      }
+      return;
+    }
+
     if (subcommand === "week") {
       const today = new Date();
       const startDate = today.toISOString().split("T")[0];
@@ -341,6 +438,17 @@ MEALS:
   pantry meals week                 This week's plan
   pantry meals plan <date> --dinner <recipe-id or "meal name">
   pantry meals shopping             Shopping list for the week
+
+AI MEAL PLANNING:
+  pantry meals generate [options]   Generate a meal plan with AI
+    --people=N                      Household size (default: 2)
+    --eating-out=N                  Days eating out (default: 1)
+    --days=N                        Days to plan (default: 7)
+    --quick-weekdays                Prefer quick meals Mon-Fri
+    --use-expiring                  Prioritize expiring ingredients
+  
+  pantry meals apply-generated      Apply the last generated plan
+    --add-grocery                   Also add shopping items to grocery list
 `);
   }
 };
