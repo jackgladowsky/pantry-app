@@ -39,6 +39,22 @@ export const toggle = mutation({
   },
 });
 
+// Update item
+export const update = mutation({
+  args: {
+    id: v.id("groceryList"),
+    name: v.optional(v.string()),
+    quantity: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    const cleanUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined)
+    );
+    await ctx.db.patch(id, cleanUpdates);
+  },
+});
+
 // Remove item
 export const remove = mutation({
   args: { id: v.id("groceryList") },

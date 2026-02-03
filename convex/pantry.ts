@@ -46,6 +46,7 @@ export const add = mutation({
     location: v.string(),
     expiresAt: v.optional(v.number()),
     notes: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("pantryItems", {
@@ -64,6 +65,7 @@ export const update = mutation({
     location: v.optional(v.string()),
     expiresAt: v.optional(v.number()),
     notes: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;

@@ -10,6 +10,7 @@ export default defineSchema({
     addedAt: v.number(), // timestamp
     expiresAt: v.optional(v.number()), // timestamp
     notes: v.optional(v.string()),
+    imageUrl: v.optional(v.string()), // AI-generated image
   })
     .index("by_location", ["location"])
     .index("by_expiry", ["expiresAt"]),
@@ -32,6 +33,7 @@ export default defineSchema({
     instructions: v.array(v.string()),
     notes: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
+    imageUrl: v.optional(v.string()), // AI-generated image
   })
     .index("by_tag", ["tags"])
     .searchIndex("search_name", { searchField: "name" }),
