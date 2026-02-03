@@ -819,6 +819,11 @@ function MealPlannerView() {
   const [generating, setGenerating] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [showRecipePicker, setShowRecipePicker] = useState(false);
+  const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
+  const [generatingMealName, setGeneratingMealName] = useState<string | null>(null);
+  const [generatedRecipe, setGeneratedRecipe] = useState<any | null>(null);
+  const [loadingRecipe, setLoadingRecipe] = useState(false);
+  const addRecipe = useMutation(api.recipes.add);
   
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
@@ -837,6 +842,59 @@ function MealPlannerView() {
   
   const getRecipeName = (recipeId: string) => {
     return recipes?.find(r => r._id === recipeId)?.name || "Unknown Recipe";
+  };
+  
+  const getRecipe = (recipeId: string) => {
+    return recipes?.find(r => r._id === recipeId);
+  };
+
+  const handleMealClick = async (meal: any) => {
+    if (meal.recipeId) {
+      // Existing recipe - show it
+      setViewingRecipeId(meal.recipeId);
+    } else if (meal.customMeal) {
+      // Custom meal - generate a recipe
+      setGeneratingMealName(meal.customMeal);
+      setLoadingRecipe(true);
+      setGeneratedRecipe(null);
+      try {
+        const res = await fetch("/api/generate-recipe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mealName: meal.customMeal,
+            pantryItems: pantryItems || [],
+          }),
+        });
+        const data = await res.json();
+        if (data.recipe) {
+          setGeneratedRecipe(data.recipe);
+        }
+      } catch (err) {
+        console.error("Failed to generate recipe:", err);
+      }
+      setLoadingRecipe(false);
+    }
+  };
+
+  const saveGeneratedRecipe = async () => {
+    if (!generatedRecipe) return;
+    try {
+      await addRecipe({
+        name: generatedRecipe.name,
+        servings: generatedRecipe.servings || 2,
+        prepTime: generatedRecipe.prepTime,
+        cookTime: generatedRecipe.cookTime,
+        tags: generatedRecipe.tags || [],
+        ingredients: generatedRecipe.ingredients || [],
+        instructions: generatedRecipe.instructions || [],
+        notes: generatedRecipe.notes,
+      });
+      setGeneratedRecipe(null);
+      setGeneratingMealName(null);
+    } catch (err) {
+      console.error("Failed to save recipe:", err);
+    }
   };
   
   const generateWeekPlan = async () => {
@@ -946,13 +1004,13 @@ function MealPlannerView() {
       </div>
 
       {/* Week Grid */}
-      <div className="grid grid-cols-7 gap-2">
+      <div className="grid grid-cols-7 gap-3">
         {days.map((day) => {
           const meals = getMealsForDate(day.date);
           return (
             <div
               key={day.date}
-              className={`bg-slate-800/40 rounded-xl p-3 min-h-[180px] border transition-all ${
+              className={`bg-slate-800/40 rounded-xl p-3 min-h-[200px] border transition-all ${
                 day.isToday ? "border-green-400/50 bg-green-500/5" : "border-slate-700/50"
               }`}
             >
@@ -963,13 +1021,18 @@ function MealPlannerView() {
               
               <div className="space-y-2">
                 {meals.map((meal, i) => (
-                  <div key={i} className="group relative bg-slate-700/50 rounded-lg p-2 text-xs">
-                    <div className="font-medium truncate">
+                  <div 
+                    key={i} 
+                    onClick={() => handleMealClick(meal)}
+                    className="group relative bg-slate-700/50 hover:bg-slate-600/50 rounded-lg p-2 text-sm cursor-pointer transition-colors"
+                  >
+                    <div className="font-medium leading-tight">
                       {meal.recipeId ? getRecipeName(meal.recipeId) : meal.customMeal}
                     </div>
-                    {meal.notes && <div className="text-slate-400 truncate">{meal.notes}</div>}
+                    {meal.notes && <div className="text-slate-400 text-xs mt-1 line-clamp-2">{meal.notes}</div>}
+                    {!meal.recipeId && <div className="text-violet-400 text-xs mt-1">Click to generate recipe</div>}
                     <button
-                      onClick={() => removeMealFromDay(day.date, i)}
+                      onClick={(e) => { e.stopPropagation(); removeMealFromDay(day.date, i); }}
                       className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                     >
                       <X className="w-3 h-3" />
@@ -1052,6 +1115,107 @@ function MealPlannerView() {
               </form>
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* View Existing Recipe Modal */}
+      {viewingRecipeId && (
+        <Modal onClose={() => setViewingRecipeId(null)} title="Recipe Details">
+          {(() => {
+            const recipe = getRecipe(viewingRecipeId);
+            if (!recipe) return <p>Recipe not found</p>;
+            return (
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                <div>
+                  <h3 className="text-xl font-bold">{recipe.name}</h3>
+                  {recipe.source && <p className="text-sm text-slate-400">{recipe.source}</p>}
+                </div>
+                <div className="flex gap-4 text-sm text-slate-300">
+                  {recipe.prepTime && <span>Prep: {recipe.prepTime}m</span>}
+                  {recipe.cookTime && <span>Cook: {recipe.cookTime}m</span>}
+                  {recipe.servings && <span>{recipe.servings} servings</span>}
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Ingredients</h4>
+                  <ul className="space-y-1">
+                    {recipe.ingredients.map((ing, i) => (
+                      <li key={i} className="text-slate-300">• {ing.quantity} {ing.name}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2">Instructions</h4>
+                  <ol className="space-y-2">
+                    {recipe.instructions.map((step, i) => (
+                      <li key={i} className="text-slate-300"><span className="text-green-400 font-medium">{i + 1}.</span> {step}</li>
+                    ))}
+                  </ol>
+                </div>
+                {recipe.notes && (
+                  <div className="bg-slate-700/30 p-3 rounded-lg">
+                    <h4 className="font-semibold mb-1">Notes</h4>
+                    <p className="text-slate-300 text-sm">{recipe.notes}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </Modal>
+      )}
+
+      {/* Generate Recipe Modal */}
+      {(generatingMealName || generatedRecipe) && (
+        <Modal onClose={() => { setGeneratingMealName(null); setGeneratedRecipe(null); }} title={generatedRecipe ? "Generated Recipe" : "Generating Recipe..."}>
+          {loadingRecipe ? (
+            <div className="flex flex-col items-center py-8">
+              <div className="w-8 h-8 border-2 border-violet-400 border-t-transparent rounded-full animate-spin mb-4" />
+              <p className="text-slate-400">Generating recipe for "{generatingMealName}"...</p>
+            </div>
+          ) : generatedRecipe ? (
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+              <div>
+                <h3 className="text-xl font-bold">{generatedRecipe.name}</h3>
+                <p className="text-sm text-violet-400">AI-generated recipe</p>
+              </div>
+              <div className="flex gap-4 text-sm text-slate-300">
+                {generatedRecipe.prepTime && <span>Prep: {generatedRecipe.prepTime}m</span>}
+                {generatedRecipe.cookTime && <span>Cook: {generatedRecipe.cookTime}m</span>}
+                {generatedRecipe.servings && <span>{generatedRecipe.servings} servings</span>}
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Ingredients</h4>
+                <ul className="space-y-1">
+                  {generatedRecipe.ingredients?.map((ing: any, i: number) => (
+                    <li key={i} className="text-slate-300">• {ing.quantity} {ing.name}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Instructions</h4>
+                <ol className="space-y-2">
+                  {generatedRecipe.instructions?.map((step: string, i: number) => (
+                    <li key={i} className="text-slate-300"><span className="text-green-400 font-medium">{i + 1}.</span> {step}</li>
+                  ))}
+                </ol>
+              </div>
+              <div className="flex gap-2 pt-4 border-t border-slate-700">
+                <button 
+                  onClick={saveGeneratedRecipe}
+                  className="flex-1 bg-green-500 hover:bg-green-600 py-2 rounded-xl font-medium transition-colors"
+                >
+                  Save to Recipes
+                </button>
+                <button 
+                  onClick={() => { setGeneratedRecipe(null); setGeneratingMealName(null); }}
+                  className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-xl transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-slate-400 py-4">Something went wrong. Try again.</p>
+          )}
         </Modal>
       )}
     </div>
