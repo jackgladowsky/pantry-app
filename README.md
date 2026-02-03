@@ -31,6 +31,13 @@ A smart kitchen inventory and recipe manager. Track what you have, find what you
 - Weekly calendar view
 - Generate shopping lists for your meal plan
 
+### 🤖 AI Meal Planner
+- Generate a week's meal plan based on your preferences
+- Set filters: household size, eating out days, quick weekday meals
+- Automatically accounts for recipe servings and leftovers
+- Prioritizes ingredients that are expiring soon
+- Avoids repeating the same recipe within 3 days
+
 ### 💻 CLI Access
 Full command-line interface for quick access and automation:
 ```bash
@@ -153,6 +160,14 @@ pantry meals plan 2026-02-05 --lunch "Leftover pizza"
 
 # Generate shopping list for the week
 pantry meals shopping
+
+# AI meal planning
+pantry meals generate                              # Generate with defaults
+pantry meals generate --people=4 --eating-out=2   # Customize
+pantry meals generate --quick-weekdays            # Prefer quick meals Mon-Fri
+pantry meals generate --use-expiring              # Prioritize expiring items
+pantry meals apply-generated                      # Apply the generated plan
+pantry meals apply-generated --add-grocery        # Also add shopping list
 ```
 
 ## Tech Stack
