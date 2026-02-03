@@ -20,23 +20,20 @@ import {
   Users,
   X,
   Search,
-  TrendingUp,
-  Calendar,
   Flame,
   ArrowRight,
   Home,
   ChevronRight,
   Pencil,
-  ImagePlus,
-  Loader2
+  UtensilsCrossed
 } from "lucide-react";
 import { formatDistanceToNow, format, differenceInDays } from "date-fns";
 
 const LOCATIONS = [
-  { id: "fridge", name: "Fridge", icon: Refrigerator, color: "from-blue-500 to-cyan-500" },
-  { id: "freezer", name: "Freezer", icon: Snowflake, color: "from-indigo-500 to-purple-500" },
-  { id: "pantry", name: "Pantry", icon: Package, color: "from-amber-500 to-orange-500" },
-  { id: "spices", name: "Spices", icon: Sparkles, color: "from-pink-500 to-rose-500" },
+  { id: "fridge", name: "Fridge", icon: Refrigerator, color: "from-sky-400 to-blue-500", bg: "bg-sky-500/10" },
+  { id: "freezer", name: "Freezer", icon: Snowflake, color: "from-violet-400 to-purple-500", bg: "bg-violet-500/10" },
+  { id: "pantry", name: "Pantry", icon: Package, color: "from-amber-400 to-orange-500", bg: "bg-amber-500/10" },
+  { id: "spices", name: "Spices", icon: Sparkles, color: "from-rose-400 to-pink-500", bg: "bg-rose-500/10" },
 ];
 
 type Tab = "dashboard" | "pantry" | "recipes" | "grocery";
@@ -57,12 +54,12 @@ export default function PantryApp() {
               </div>
               <div>
                 <h1 className="text-xl font-bold">Kitchen</h1>
-                <p className="text-xs text-zinc-500">Your culinary command center</p>
+                <p className="text-xs text-slate-400">Your culinary command center</p>
               </div>
             </div>
             
             {/* Nav */}
-            <nav className="flex items-center gap-1 bg-zinc-900/50 rounded-xl p-1">
+            <nav className="flex items-center gap-1 bg-slate-800/40 rounded-xl p-1">
               <NavButton active={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")}>
                 <Home className="w-4 h-4" />
                 <span className="hidden sm:inline">Dashboard</span>
@@ -101,8 +98,8 @@ function NavButton({ active, onClick, children }: { active: boolean; onClick: ()
       onClick={onClick}
       className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
         active 
-          ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" 
-          : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+          ? "bg-green-500 text-white shadow-lg shadow-green-500/20" 
+          : "text-slate-300 hover:text-white hover:bg-slate-700/60"
       }`}
     >
       {children}
@@ -141,7 +138,7 @@ function Dashboard({ setActiveTab, setSelectedRecipe }: {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-amber-400 mb-1">Items expiring soon</h3>
-              <p className="text-sm text-zinc-400 mb-3">
+              <p className="text-sm text-slate-300 mb-3">
                 {expiringCount} item{expiringCount > 1 ? "s" : ""} will expire within the next 7 days
               </p>
               <div className="flex flex-wrap gap-2">
@@ -177,7 +174,7 @@ function Dashboard({ setActiveTab, setSelectedRecipe }: {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">Storage Overview</h2>
-          <button onClick={() => setActiveTab("pantry")} className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+          <button onClick={() => setActiveTab("pantry")} className="text-sm text-green-400 hover:text-emerald-300 flex items-center gap-1">
             View all <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -185,12 +182,12 @@ function Dashboard({ setActiveTab, setSelectedRecipe }: {
           {locationCounts.map((loc) => {
             const Icon = loc.icon;
             return (
-              <button key={loc.id} onClick={() => setActiveTab("pantry")} className="group bg-zinc-900/50 hover:bg-zinc-800/80 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-5 text-left transition-all">
+              <button key={loc.id} onClick={() => setActiveTab("pantry")} className="group bg-slate-800/40 hover:bg-slate-700/50 border border-slate-700/50 hover:border-slate-600 rounded-2xl p-5 text-left transition-all">
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${loc.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
                   <Icon className="w-6 h-6 text-white" />
                 </div>
                 <p className="text-2xl font-bold mb-1">{loc.count}</p>
-                <p className="text-sm text-zinc-500">{loc.name}</p>
+                <p className="text-sm text-slate-400">{loc.name}</p>
               </button>
             );
           })}
@@ -202,18 +199,18 @@ function Dashboard({ setActiveTab, setSelectedRecipe }: {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Ready to Cook</h2>
-            <button onClick={() => setActiveTab("recipes")} className="text-sm text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+            <button onClick={() => setActiveTab("recipes")} className="text-sm text-green-400 hover:text-emerald-300 flex items-center gap-1">
               All recipes <ChevronRight className="w-4 h-4" />
             </button>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {canMake?.filter(r => r.canMake).slice(0, 3).map((recipe) => (
-              <button key={recipe._id} onClick={() => { setSelectedRecipe(recipe._id); setActiveTab("recipes"); }} className="group bg-zinc-900/50 hover:bg-zinc-800/80 border border-zinc-800 hover:border-emerald-500/30 rounded-2xl p-5 text-left transition-all">
+              <button key={recipe._id} onClick={() => { setSelectedRecipe(recipe._id); setActiveTab("recipes"); }} className="group bg-slate-800/40 hover:bg-slate-700/50 border border-slate-700/50 hover:border-green-400/30 rounded-2xl p-5 text-left transition-all">
                 <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-medium group-hover:text-emerald-400 transition-colors">{recipe.name}</h3>
-                  <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded-full">Ready</span>
+                  <h3 className="font-medium group-hover:text-green-400 transition-colors">{recipe.name}</h3>
+                  <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">Ready</span>
                 </div>
-                <div className="flex items-center gap-4 text-sm text-zinc-500">
+                <div className="flex items-center gap-4 text-sm text-slate-400">
                   {recipe.prepTime && recipe.cookTime && <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{recipe.prepTime + recipe.cookTime}m</span>}
                   {recipe.servings && <span className="flex items-center gap-1"><Users className="w-4 h-4" />{recipe.servings}</span>}
                 </div>
@@ -228,17 +225,17 @@ function Dashboard({ setActiveTab, setSelectedRecipe }: {
 
 function StatCard({ icon, label, value, color, onClick }: { icon: React.ReactNode; label: string; value: number; color: string; onClick: () => void; }) {
   const colorClasses: Record<string, string> = {
-    emerald: "from-emerald-500/20 to-emerald-600/20 text-emerald-400",
+    emerald: "from-emerald-500/20 to-emerald-600/20 text-green-400",
     blue: "from-blue-500/20 to-blue-600/20 text-blue-400",
     purple: "from-purple-500/20 to-purple-600/20 text-purple-400",
     amber: "from-amber-500/20 to-amber-600/20 text-amber-400",
-    zinc: "from-zinc-500/20 to-zinc-600/20 text-zinc-400",
+    zinc: "from-zinc-500/20 to-zinc-600/20 text-slate-300",
   };
   return (
-    <button onClick={onClick} className="bg-zinc-900/50 hover:bg-zinc-800/80 border border-zinc-800 hover:border-zinc-700 rounded-2xl p-5 text-left transition-all group">
+    <button onClick={onClick} className="bg-slate-800/40 hover:bg-slate-700/50 border border-slate-700/50 hover:border-slate-600 rounded-2xl p-5 text-left transition-all group">
       <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${colorClasses[color]} flex items-center justify-center mb-3`}>{icon}</div>
       <p className="text-3xl font-bold mb-1">{value}</p>
-      <p className="text-sm text-zinc-500">{label}</p>
+      <p className="text-sm text-slate-400">{label}</p>
     </button>
   );
 }
@@ -274,7 +271,7 @@ function PantryView() {
     setShowAdd(false);
   };
 
-  const handleUpdate = async (updates: { name?: string; quantity?: string; location?: string; expiresAt?: number; imageUrl?: string }) => {
+  const handleUpdate = async (updates: { name?: string; quantity?: string; location?: string; expiresAt?: number }) => {
     if (!editingItem) return;
     await updateItem({ id: editingItem._id, ...updates });
     setEditingItem(null);
@@ -294,17 +291,17 @@ function PantryView() {
       <div className="flex flex-col sm:flex-row gap-4 justify-between">
         <div>
           <h2 className="text-2xl font-bold mb-1">Pantry</h2>
-          <p className="text-zinc-500">{items?.length || 0} items tracked</p>
+          <p className="text-slate-400">{items?.length || 0} items tracked</p>
         </div>
-        <button onClick={() => setShowAdd(true)} className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 px-5 py-3 rounded-xl font-medium shadow-lg shadow-emerald-600/20 transition-all hover:scale-105">
+        <button onClick={() => setShowAdd(true)} className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 px-5 py-3 rounded-xl font-medium shadow-lg shadow-green-500/20 transition-all hover:scale-105">
           <Plus className="w-5 h-5" /> Add Item
         </button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-          <input type="text" placeholder="Search items..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input type="text" placeholder="Search items..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-green-400/50 transition-colors" />
         </div>
         <div className="flex gap-2 flex-wrap">
           <FilterButton active={!selectedLocation} onClick={() => setSelectedLocation(null)}>All</FilterButton>
@@ -321,34 +318,30 @@ function PantryView() {
           const loc = LOCATIONS.find(l => l.id === item.location);
           const Icon = loc?.icon || Package;
           return (
-            <div key={item._id} className={`group flex items-center gap-4 bg-zinc-900/50 hover:bg-zinc-800/80 border rounded-xl p-4 transition-all ${status === "expired" ? "border-red-500/30 bg-red-500/5" : status === "urgent" ? "border-amber-500/30 bg-amber-500/5" : "border-zinc-800 hover:border-zinc-700"}`}>
-              {item.imageUrl ? (
-                <img src={item.imageUrl} alt={item.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
-              ) : (
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${loc?.color || "from-zinc-500 to-zinc-600"} flex items-center justify-center flex-shrink-0`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-              )}
+            <div key={item._id} className={`group flex items-center gap-4 bg-slate-800/40 hover:bg-slate-700/50 border rounded-xl p-4 transition-all card-glow ${status === "expired" ? "border-red-400/40 bg-red-500/10" : status === "urgent" ? "border-amber-400/40 bg-amber-500/10" : "border-slate-700/50 hover:border-slate-600"}`}>
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${loc?.color || "from-slate-500 to-slate-600"} flex items-center justify-center flex-shrink-0 shadow-lg`}>
+                <Icon className="w-6 h-6 text-white" />
+              </div>
               <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setEditingItem(item)}>
                 <h3 className="font-medium truncate">{item.name}</h3>
-                <div className="flex items-center gap-3 text-sm text-zinc-500">
+                <div className="flex items-center gap-3 text-sm text-slate-400">
                   {item.quantity && <span>{item.quantity}</span>}
                   <span>{loc?.name}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 {item.expiresAt && (
-                  <span className={`text-sm font-medium ${status === "expired" ? "text-red-400" : status === "urgent" ? "text-amber-400" : status === "soon" ? "text-yellow-400" : "text-zinc-500"}`}>
+                  <span className={`text-sm font-medium ${status === "expired" ? "text-red-400" : status === "urgent" ? "text-amber-400" : status === "soon" ? "text-yellow-400" : "text-slate-400"}`}>
                     {status === "expired" ? "Expired" : formatDistanceToNow(item.expiresAt, { addSuffix: true })}
                   </span>
                 )}
-                <button onClick={() => setEditingItem(item)} className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-emerald-400 transition-all"><Pencil className="w-4 h-4" /></button>
-                <button onClick={() => removeItem({ id: item._id })} className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 transition-all"><Trash2 className="w-4 h-4" /></button>
+                <button onClick={() => setEditingItem(item)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-green-400 transition-all"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => removeItem({ id: item._id })} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400 transition-all"><Trash2 className="w-4 h-4" /></button>
               </div>
             </div>
           );
         })}
-        {filteredItems?.length === 0 && <div className="text-center py-16 text-zinc-500"><Package className="w-12 h-12 mx-auto mb-4 opacity-50" /><p>No items found</p></div>}
+        {filteredItems?.length === 0 && <div className="text-center py-16 text-slate-400"><Package className="w-12 h-12 mx-auto mb-4 opacity-50" /><p>No items found</p></div>}
       </div>
 
       {/* Add Modal */}
@@ -372,29 +365,29 @@ function PantryItemForm({ item, setItem, onSubmit, submitLabel }: { item: { name
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm text-zinc-400 mb-2">Item Name</label>
-        <input type="text" placeholder="e.g. Milk" value={item.name} onChange={(e) => setItem({ ...item, name: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" autoFocus />
+        <label className="block text-sm text-slate-300 mb-2">Item Name</label>
+        <input type="text" placeholder="e.g. Milk" value={item.name} onChange={(e) => setItem({ ...item, name: e.target.value })} className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" autoFocus />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-zinc-400 mb-2">Quantity</label>
-          <input type="text" placeholder="e.g. 1 gallon" value={item.quantity} onChange={(e) => setItem({ ...item, quantity: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+          <label className="block text-sm text-slate-300 mb-2">Quantity</label>
+          <input type="text" placeholder="e.g. 1 gallon" value={item.quantity} onChange={(e) => setItem({ ...item, quantity: e.target.value })} className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
         </div>
         <div>
-          <label className="block text-sm text-zinc-400 mb-2">Days Until Expiry</label>
-          <input type="number" value={item.days} onChange={(e) => setItem({ ...item, days: parseInt(e.target.value) || 7 })} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+          <label className="block text-sm text-slate-300 mb-2">Days Until Expiry</label>
+          <input type="number" value={item.days} onChange={(e) => setItem({ ...item, days: parseInt(e.target.value) || 7 })} className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
         </div>
       </div>
       <div>
-        <label className="block text-sm text-zinc-400 mb-2">Location</label>
+        <label className="block text-sm text-slate-300 mb-2">Location</label>
         <div className="grid grid-cols-2 gap-2">
           {LOCATIONS.map((loc) => {
             const Icon = loc.icon;
-            return <button key={loc.id} type="button" onClick={() => setItem({ ...item, location: loc.id })} className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${item.location === loc.id ? "border-emerald-500 bg-emerald-500/10" : "border-zinc-700 hover:border-zinc-600"}`}><Icon className="w-5 h-5" /> {loc.name}</button>;
+            return <button key={loc.id} type="button" onClick={() => setItem({ ...item, location: loc.id })} className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${item.location === loc.id ? "border-green-400 bg-green-500/10" : "border-slate-600 hover:border-zinc-600"}`}><Icon className="w-5 h-5" /> {loc.name}</button>;
           })}
         </div>
       </div>
-      <button onClick={onSubmit} disabled={!item.name} className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed py-3 rounded-xl font-medium transition-colors">{submitLabel}</button>
+      <button onClick={onSubmit} disabled={!item.name} className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed py-3 rounded-xl font-medium transition-colors">{submitLabel}</button>
     </div>
   );
 }
@@ -404,80 +397,42 @@ function EditPantryItemForm({ item, onSubmit, onDelete }: { item: Doc<"pantryIte
   const [quantity, setQuantity] = useState(item.quantity || "");
   const [location, setLocation] = useState(item.location);
   const [days, setDays] = useState(item.expiresAt ? Math.max(0, differenceInDays(item.expiresAt, Date.now())) : 7);
-  const [imageUrl, setImageUrl] = useState(item.imageUrl || "");
-  const [generating, setGenerating] = useState(false);
-
-  const generateImage = async () => {
-    if (!name.trim()) return;
-    setGenerating(true);
-    try {
-      const res = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, type: "pantry" }),
-      });
-      const data = await res.json();
-      if (data.imageUrl) setImageUrl(data.imageUrl);
-    } catch (err) {
-      console.error("Image generation failed:", err);
-    }
-    setGenerating(false);
-  };
 
   return (
     <div className="space-y-4">
-      {/* Image Preview */}
-      <div className="flex items-center gap-4">
-        {imageUrl ? (
-          <img src={imageUrl} alt={name} className="w-20 h-20 rounded-xl object-cover" />
-        ) : (
-          <div className="w-20 h-20 rounded-xl bg-zinc-800 flex items-center justify-center">
-            <Package className="w-8 h-8 text-zinc-600" />
-          </div>
-        )}
-        <button 
-          onClick={generateImage} 
-          disabled={generating || !name.trim()}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 rounded-xl text-sm transition-colors"
-        >
-          {generating ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
-          {generating ? "Generating..." : "Generate Image"}
-        </button>
-      </div>
-      
       <div>
-        <label className="block text-sm text-zinc-400 mb-2">Item Name</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+        <label className="block text-sm text-slate-400 mb-2">Item Name</label>
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50 focus:bg-slate-800" />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-zinc-400 mb-2">Quantity</label>
-          <input type="text" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+          <label className="block text-sm text-slate-400 mb-2">Quantity</label>
+          <input type="text" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
         </div>
         <div>
-          <label className="block text-sm text-zinc-400 mb-2">Days Until Expiry</label>
-          <input type="number" value={days} onChange={(e) => setDays(parseInt(e.target.value) || 0)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+          <label className="block text-sm text-slate-400 mb-2">Days Until Expiry</label>
+          <input type="number" value={days} onChange={(e) => setDays(parseInt(e.target.value) || 0)} className="w-full bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
         </div>
       </div>
       <div>
-        <label className="block text-sm text-zinc-400 mb-2">Location</label>
+        <label className="block text-sm text-slate-400 mb-2">Location</label>
         <div className="grid grid-cols-2 gap-2">
           {LOCATIONS.map((loc) => {
             const Icon = loc.icon;
-            return <button key={loc.id} type="button" onClick={() => setLocation(loc.id)} className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${location === loc.id ? "border-emerald-500 bg-emerald-500/10" : "border-zinc-700 hover:border-zinc-600"}`}><Icon className="w-5 h-5" /> {loc.name}</button>;
+            return <button key={loc.id} type="button" onClick={() => setLocation(loc.id)} className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${location === loc.id ? "border-green-400 bg-green-500/15 text-green-300" : "border-slate-600/50 hover:border-slate-500 text-slate-300"}`}><Icon className="w-5 h-5" /> {loc.name}</button>;
           })}
         </div>
       </div>
       <div className="flex gap-3">
-        <button onClick={() => onSubmit({ name, quantity: quantity || undefined, location, expiresAt: Date.now() + days * 24 * 60 * 60 * 1000, imageUrl: imageUrl || undefined })} className="flex-1 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-xl font-medium transition-colors">Save Changes</button>
-        <button onClick={onDelete} className="px-4 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition-colors"><Trash2 className="w-5 h-5" /></button>
+        <button onClick={() => onSubmit({ name, quantity: quantity || undefined, location, expiresAt: Date.now() + days * 24 * 60 * 60 * 1000 })} className="flex-1 bg-green-500 hover:bg-green-600 py-3 rounded-xl font-medium transition-colors shadow-lg shadow-green-500/20">Save Changes</button>
+        <button onClick={onDelete} className="px-4 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl transition-colors"><Trash2 className="w-5 h-5" /></button>
       </div>
     </div>
   );
 }
 
 function FilterButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
-  return <button onClick={onClick} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${active ? "bg-emerald-600 text-white" : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:border-zinc-700 hover:text-white"}`}>{children}</button>;
+  return <button onClick={onClick} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${active ? "bg-green-500 text-white" : "bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:border-slate-600 hover:text-white"}`}>{children}</button>;
 }
 
 // ============ RECIPES VIEW ============
@@ -506,49 +461,49 @@ function RecipesView({ selectedRecipe, setSelectedRecipe }: { selectedRecipe: Id
     
     return (
       <div className="max-w-3xl mx-auto">
-        <button onClick={() => setSelectedRecipe(null)} className="flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors">
+        <button onClick={() => setSelectedRecipe(null)} className="flex items-center gap-2 text-slate-300 hover:text-white mb-6 transition-colors">
           <ChevronRight className="w-4 h-4 rotate-180" /> Back to recipes
         </button>
         
-        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl overflow-hidden">
-          <div className="p-6 border-b border-zinc-800">
+        <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-hidden">
+          <div className="p-6 border-b border-slate-700/50">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h1 className="text-2xl font-bold mb-2">{recipe.name}</h1>
-                {recipe.source && <p className="text-sm text-zinc-500">{recipe.source}</p>}
+                {recipe.source && <p className="text-sm text-slate-400">{recipe.source}</p>}
               </div>
               <div className="flex items-center gap-2">
-                {recipe.canMake && <span className="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-sm font-medium">Ready to cook!</span>}
-                <button onClick={() => setEditMode(true)} className="p-2 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 rounded-lg transition-all"><Pencil className="w-5 h-5" /></button>
+                {recipe.canMake && <span className="bg-green-500/20 text-green-400 px-3 py-1 rounded-full text-sm font-medium">Ready to cook!</span>}
+                <button onClick={() => setEditMode(true)} className="p-2 text-slate-300 hover:text-green-400 hover:bg-slate-700/60 rounded-lg transition-all"><Pencil className="w-5 h-5" /></button>
               </div>
             </div>
             <div className="flex items-center gap-6 text-sm">
-              {recipe.prepTime && <div className="flex items-center gap-2 text-zinc-400"><Clock className="w-4 h-4" /><span>Prep: {recipe.prepTime}m</span></div>}
-              {recipe.cookTime && <div className="flex items-center gap-2 text-zinc-400"><Flame className="w-4 h-4" /><span>Cook: {recipe.cookTime}m</span></div>}
-              {recipe.servings && <div className="flex items-center gap-2 text-zinc-400"><Users className="w-4 h-4" /><span>{recipe.servings} servings</span></div>}
+              {recipe.prepTime && <div className="flex items-center gap-2 text-slate-300"><Clock className="w-4 h-4" /><span>Prep: {recipe.prepTime}m</span></div>}
+              {recipe.cookTime && <div className="flex items-center gap-2 text-slate-300"><Flame className="w-4 h-4" /><span>Cook: {recipe.cookTime}m</span></div>}
+              {recipe.servings && <div className="flex items-center gap-2 text-slate-300"><Users className="w-4 h-4" /><span>{recipe.servings} servings</span></div>}
             </div>
             <div className="flex gap-2 mt-4 flex-wrap">
-              {recipe.tags.map((tag) => <span key={tag} className="bg-zinc-800 text-zinc-400 px-3 py-1 rounded-full text-sm">{tag}</span>)}
+              {recipe.tags.map((tag) => <span key={tag} className="bg-slate-700/60 text-slate-300 px-3 py-1 rounded-full text-sm">{tag}</span>)}
             </div>
           </div>
           
-          <div className="p-6 border-b border-zinc-800">
+          <div className="p-6 border-b border-slate-700/50">
             <h2 className="font-semibold mb-4">Ingredients</h2>
             <div className="grid gap-2">
               {recipe.ingredients.map((ing, i) => {
                 const have = !recipe.missing.includes(ing.name);
                 return (
-                  <div key={i} className={`flex items-center gap-3 p-3 rounded-xl ${have ? "bg-emerald-500/10" : "bg-zinc-800"}`}>
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${have ? "bg-emerald-500" : "border-2 border-zinc-600"}`}>
+                  <div key={i} className={`flex items-center gap-3 p-3 rounded-xl ${have ? "bg-green-500/10" : "bg-slate-700/60"}`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center ${have ? "bg-green-500" : "border-2 border-zinc-600"}`}>
                       {have && <Check className="w-4 h-4 text-white" />}
                     </div>
-                    <span className={ing.optional ? "text-zinc-500" : ""}>{ing.quantity} {ing.name}</span>
+                    <span className={ing.optional ? "text-slate-400" : ""}>{ing.quantity} {ing.name}</span>
                     {ing.optional && <span className="text-zinc-600 text-sm">(optional)</span>}
                   </div>
                 );
               })}
             </div>
-            {!recipe.canMake && <button onClick={() => addToGrocery({ recipeId: recipe._id })} className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-xl font-medium transition-colors">Add missing items to grocery list</button>}
+            {!recipe.canMake && <button onClick={() => addToGrocery({ recipeId: recipe._id })} className="mt-4 w-full bg-green-500 hover:bg-green-600 py-3 rounded-xl font-medium transition-colors">Add missing items to grocery list</button>}
           </div>
           
           <div className="p-6">
@@ -556,7 +511,7 @@ function RecipesView({ selectedRecipe, setSelectedRecipe }: { selectedRecipe: Id
             <ol className="space-y-4">
               {recipe.instructions.map((step, i) => (
                 <li key={i} className="flex gap-4">
-                  <span className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-sm font-medium flex-shrink-0">{i + 1}</span>
+                  <span className="w-8 h-8 rounded-full bg-slate-700/60 flex items-center justify-center text-sm font-medium flex-shrink-0">{i + 1}</span>
                   <p className="text-zinc-300 pt-1">{step}</p>
                 </li>
               ))}
@@ -564,9 +519,9 @@ function RecipesView({ selectedRecipe, setSelectedRecipe }: { selectedRecipe: Id
           </div>
           
           {recipe.notes && (
-            <div className="p-6 border-t border-zinc-800 bg-zinc-800/30">
+            <div className="p-6 border-t border-slate-700/50 bg-slate-700/60/30">
               <h2 className="font-semibold mb-2">Notes</h2>
-              <p className="text-zinc-400">{recipe.notes}</p>
+              <p className="text-slate-300">{recipe.notes}</p>
             </div>
           )}
         </div>
@@ -578,13 +533,13 @@ function RecipesView({ selectedRecipe, setSelectedRecipe }: { selectedRecipe: Id
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold mb-1">Recipes</h2>
-        <p className="text-zinc-500">{canMake?.filter(r => r.canMake).length || 0} recipes ready to cook</p>
+        <p className="text-slate-400">{canMake?.filter(r => r.canMake).length || 0} recipes ready to cook</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-          <input type="text" placeholder="Search recipes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-emerald-500/50 transition-colors" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input type="text" placeholder="Search recipes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-slate-800/50 border border-slate-700/50 rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-green-400/50 transition-colors" />
         </div>
       </div>
       
@@ -595,25 +550,25 @@ function RecipesView({ selectedRecipe, setSelectedRecipe }: { selectedRecipe: Id
 
       <div className="grid sm:grid-cols-2 gap-4">
         {filteredRecipes?.map((recipe) => (
-          <button key={recipe._id} onClick={() => setSelectedRecipe(recipe._id)} className={`group bg-zinc-900/50 hover:bg-zinc-800/80 border rounded-2xl p-5 text-left transition-all ${recipe.canMake ? "border-emerald-500/30 hover:border-emerald-500/50" : "border-zinc-800 hover:border-zinc-700"}`}>
+          <button key={recipe._id} onClick={() => setSelectedRecipe(recipe._id)} className={`group bg-slate-800/40 hover:bg-slate-700/50 border rounded-2xl p-5 text-left transition-all ${recipe.canMake ? "border-green-400/30 hover:border-green-400/50" : "border-slate-700/50 hover:border-slate-600"}`}>
             <div className="flex items-start justify-between mb-3">
-              <h3 className="font-medium text-lg group-hover:text-emerald-400 transition-colors">{recipe.name}</h3>
-              {recipe.canMake && <span className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded-full">Ready!</span>}
+              <h3 className="font-medium text-lg group-hover:text-green-400 transition-colors">{recipe.name}</h3>
+              {recipe.canMake && <span className="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">Ready!</span>}
             </div>
-            <div className="flex items-center gap-4 text-sm text-zinc-500 mb-3">
+            <div className="flex items-center gap-4 text-sm text-slate-400 mb-3">
               {recipe.prepTime && recipe.cookTime && <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{recipe.prepTime + recipe.cookTime}m</span>}
               {recipe.servings && <span className="flex items-center gap-1"><Users className="w-4 h-4" />{recipe.servings}</span>}
               <span className="flex items-center gap-1"><Package className="w-4 h-4" />{recipe.haveCount}/{recipe.ingredients.length}</span>
             </div>
             {!recipe.canMake && recipe.missing.length > 0 && <p className="text-sm text-amber-400/80 mb-3">Missing: {recipe.missing.slice(0, 3).join(", ")}{recipe.missing.length > 3 && ` +${recipe.missing.length - 3}`}</p>}
             <div className="flex gap-2 flex-wrap">
-              {recipe.tags.slice(0, 3).map((tag) => <span key={tag} className="bg-zinc-800 text-zinc-500 text-xs px-2 py-1 rounded-full">{tag}</span>)}
+              {recipe.tags.slice(0, 3).map((tag) => <span key={tag} className="bg-slate-700/60 text-slate-400 text-xs px-2 py-1 rounded-full">{tag}</span>)}
             </div>
           </button>
         ))}
       </div>
       
-      {filteredRecipes?.length === 0 && <div className="text-center py-16 text-zinc-500"><BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" /><p>No recipes found</p></div>}
+      {filteredRecipes?.length === 0 && <div className="text-center py-16 text-slate-400"><BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" /><p>No recipes found</p></div>}
     </div>
   );
 }
@@ -653,56 +608,56 @@ function EditRecipeView({ recipe, onSave, onCancel, onDelete }: { recipe: any; o
 
   return (
     <div className="max-w-3xl mx-auto">
-      <button onClick={onCancel} className="flex items-center gap-2 text-zinc-400 hover:text-white mb-6 transition-colors">
+      <button onClick={onCancel} className="flex items-center gap-2 text-slate-300 hover:text-white mb-6 transition-colors">
         <ChevronRight className="w-4 h-4 rotate-180" /> Cancel editing
       </button>
       
-      <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-6">
+      <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 space-y-6">
         <h2 className="text-xl font-bold">Edit Recipe</h2>
         
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-400 mb-2">Recipe Name</label>
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+            <label className="block text-sm text-slate-300 mb-2">Recipe Name</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-400 mb-2">Source</label>
-            <input type="text" value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g. NYT Cooking" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+            <label className="block text-sm text-slate-300 mb-2">Source</label>
+            <input type="text" value={source} onChange={(e) => setSource(e.target.value)} placeholder="e.g. NYT Cooking" className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
           </div>
           <div>
-            <label className="block text-sm text-zinc-400 mb-2">Servings</label>
-            <input type="number" value={servings} onChange={(e) => setServings(parseInt(e.target.value) || 2)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+            <label className="block text-sm text-slate-300 mb-2">Servings</label>
+            <input type="number" value={servings} onChange={(e) => setServings(parseInt(e.target.value) || 2)} className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-zinc-400 mb-2">Prep (min)</label>
-              <input type="number" value={prepTime} onChange={(e) => setPrepTime(parseInt(e.target.value) || 0)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+              <label className="block text-sm text-slate-300 mb-2">Prep (min)</label>
+              <input type="number" value={prepTime} onChange={(e) => setPrepTime(parseInt(e.target.value) || 0)} className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
             </div>
             <div>
-              <label className="block text-sm text-zinc-400 mb-2">Cook (min)</label>
-              <input type="number" value={cookTime} onChange={(e) => setCookTime(parseInt(e.target.value) || 0)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+              <label className="block text-sm text-slate-300 mb-2">Cook (min)</label>
+              <input type="number" value={cookTime} onChange={(e) => setCookTime(parseInt(e.target.value) || 0)} className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
             </div>
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-400 mb-2">Tags (comma separated)</label>
-            <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="quick, seafood, weeknight" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+            <label className="block text-sm text-slate-300 mb-2">Tags (comma separated)</label>
+            <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="quick, seafood, weeknight" className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-400 mb-2">Ingredients (one per line: "quantity name")</label>
-            <textarea value={ingredients} onChange={(e) => setIngredients(e.target.value)} rows={8} placeholder="1 lb shrimp&#10;3 Tbsp soy sauce&#10;1 Tbsp garlic (optional)" className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50 font-mono text-sm" />
+            <label className="block text-sm text-slate-300 mb-2">Ingredients (one per line: "quantity name")</label>
+            <textarea value={ingredients} onChange={(e) => setIngredients(e.target.value)} rows={8} placeholder="1 lb shrimp&#10;3 Tbsp soy sauce&#10;1 Tbsp garlic (optional)" className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50 font-mono text-sm" />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-400 mb-2">Instructions (separate steps with blank line)</label>
-            <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={10} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+            <label className="block text-sm text-slate-300 mb-2">Instructions (separate steps with blank line)</label>
+            <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={10} className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-400 mb-2">Notes</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Personal notes, modifications, etc." className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500/50" />
+            <label className="block text-sm text-slate-300 mb-2">Notes</label>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Personal notes, modifications, etc." className="w-full bg-slate-700/60 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:border-green-400/50" />
           </div>
         </div>
         
         <div className="flex gap-3">
-          <button onClick={handleSave} className="flex-1 bg-emerald-600 hover:bg-emerald-700 py-3 rounded-xl font-medium transition-colors">Save Changes</button>
+          <button onClick={handleSave} className="flex-1 bg-green-500 hover:bg-green-600 py-3 rounded-xl font-medium transition-colors">Save Changes</button>
           <button onClick={onDelete} className="px-4 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition-colors"><Trash2 className="w-5 h-5" /></button>
         </div>
       </div>
@@ -749,31 +704,31 @@ function GroceryView() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h2 className="text-2xl font-bold mb-1">Grocery List</h2>
-        <p className="text-zinc-500">{unchecked.length} items to get</p>
+        <p className="text-slate-400">{unchecked.length} items to get</p>
       </div>
       
       <div className="flex gap-3">
-        <input type="text" placeholder="Add item..." value={newItem} onChange={(e) => setNewItem(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAdd()} className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 focus:outline-none focus:border-emerald-500/50 transition-colors text-lg" />
-        <button onClick={handleAdd} className="bg-emerald-600 hover:bg-emerald-700 px-6 rounded-xl transition-colors"><Plus className="w-6 h-6" /></button>
+        <input type="text" placeholder="Add item..." value={newItem} onChange={(e) => setNewItem(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleAdd()} className="flex-1 bg-slate-800/50 border border-slate-700/50 rounded-xl px-5 py-4 focus:outline-none focus:border-green-400/50 transition-colors text-lg" />
+        <button onClick={handleAdd} className="bg-green-500 hover:bg-green-600 px-6 rounded-xl transition-colors"><Plus className="w-6 h-6" /></button>
       </div>
       
       <div className="space-y-2">
         {unchecked.map((item) => (
-          <div key={item._id} className="group flex items-center gap-4 bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700 rounded-xl p-4 transition-all">
-            <button onClick={() => toggleItem({ id: item._id })} className="w-7 h-7 border-2 border-zinc-600 hover:border-emerald-500 rounded-lg transition-colors flex-shrink-0" />
+          <div key={item._id} className="group flex items-center gap-4 bg-slate-800/40 border border-slate-700/50 hover:border-slate-600 rounded-xl p-4 transition-all">
+            <button onClick={() => toggleItem({ id: item._id })} className="w-7 h-7 border-2 border-zinc-600 hover:border-green-400 rounded-lg transition-colors flex-shrink-0" />
             {editingId === item._id ? (
               <div className="flex-1 flex gap-2">
-                <input type="text" value={editingName} onChange={(e) => setEditingName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 focus:outline-none focus:border-emerald-500/50" autoFocus />
-                <input type="text" value={editingQty} onChange={(e) => setEditingQty(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} placeholder="Qty" className="w-20 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1 focus:outline-none focus:border-emerald-500/50" />
-                <button onClick={saveEdit} className="text-emerald-400 hover:text-emerald-300"><Check className="w-5 h-5" /></button>
-                <button onClick={() => setEditingId(null)} className="text-zinc-500 hover:text-zinc-300"><X className="w-5 h-5" /></button>
+                <input type="text" value={editingName} onChange={(e) => setEditingName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} className="flex-1 bg-slate-700/60 border border-slate-600 rounded-lg px-3 py-1 focus:outline-none focus:border-green-400/50" autoFocus />
+                <input type="text" value={editingQty} onChange={(e) => setEditingQty(e.target.value)} onKeyDown={(e) => e.key === "Enter" && saveEdit()} placeholder="Qty" className="w-20 bg-slate-700/60 border border-slate-600 rounded-lg px-3 py-1 focus:outline-none focus:border-green-400/50" />
+                <button onClick={saveEdit} className="text-green-400 hover:text-emerald-300"><Check className="w-5 h-5" /></button>
+                <button onClick={() => setEditingId(null)} className="text-slate-400 hover:text-zinc-300"><X className="w-5 h-5" /></button>
               </div>
             ) : (
               <>
                 <span className="flex-1 text-lg cursor-pointer" onClick={() => startEdit(item)}>{item.name}</span>
-                {item.quantity && <span className="text-zinc-500">{item.quantity}</span>}
-                <button onClick={() => startEdit(item)} className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-emerald-400 transition-all"><Pencil className="w-4 h-4" /></button>
-                <button onClick={() => removeItem({ id: item._id })} className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 transition-all"><Trash2 className="w-5 h-5" /></button>
+                {item.quantity && <span className="text-slate-400">{item.quantity}</span>}
+                <button onClick={() => startEdit(item)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-green-400 transition-all"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => removeItem({ id: item._id })} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-400 transition-all"><Trash2 className="w-5 h-5" /></button>
               </>
             )}
           </div>
@@ -781,23 +736,23 @@ function GroceryView() {
       </div>
       
       {checked.length > 0 && (
-        <div className="pt-4 border-t border-zinc-800">
+        <div className="pt-4 border-t border-slate-700/50">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-zinc-500">Completed ({checked.length})</span>
+            <span className="text-slate-400">Completed ({checked.length})</span>
             <button onClick={() => clearChecked()} className="text-sm text-red-400 hover:text-red-300 transition-colors">Clear all</button>
           </div>
           <div className="space-y-2 opacity-60">
             {checked.map((item) => (
-              <div key={item._id} className="flex items-center gap-4 bg-zinc-900/30 rounded-xl p-4">
-                <button onClick={() => toggleItem({ id: item._id })} className="w-7 h-7 bg-emerald-600 rounded-lg flex items-center justify-center"><Check className="w-4 h-4" /></button>
-                <span className="flex-1 text-lg line-through text-zinc-500">{item.name}</span>
+              <div key={item._id} className="flex items-center gap-4 bg-slate-800/50/30 rounded-xl p-4">
+                <button onClick={() => toggleItem({ id: item._id })} className="w-7 h-7 bg-green-500 rounded-lg flex items-center justify-center"><Check className="w-4 h-4" /></button>
+                <span className="flex-1 text-lg line-through text-slate-400">{item.name}</span>
               </div>
             ))}
           </div>
         </div>
       )}
       
-      {items?.length === 0 && <div className="text-center py-16 text-zinc-500"><ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" /><p>Your grocery list is empty</p><p className="text-sm mt-1">Add items or generate from recipes</p></div>}
+      {items?.length === 0 && <div className="text-center py-16 text-slate-400"><ShoppingCart className="w-12 h-12 mx-auto mb-4 opacity-50" /><p>Your grocery list is empty</p><p className="text-sm mt-1">Add items or generate from recipes</p></div>}
     </div>
   );
 }
@@ -807,10 +762,10 @@ function Modal({ onClose, title, children }: { onClose: () => void; title: strin
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+      <div className="relative bg-slate-800/50 border border-slate-700/50 rounded-2xl w-full max-w-md p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold">{title}</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
         </div>
         {children}
       </div>

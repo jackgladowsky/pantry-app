@@ -10,7 +10,6 @@ export default defineSchema({
     addedAt: v.number(), // timestamp
     expiresAt: v.optional(v.number()), // timestamp
     notes: v.optional(v.string()),
-    imageUrl: v.optional(v.string()), // AI-generated image
   })
     .index("by_location", ["location"])
     .index("by_expiry", ["expiresAt"]),
