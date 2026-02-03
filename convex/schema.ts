@@ -38,6 +38,19 @@ export default defineSchema({
     .index("by_tag", ["tags"])
     .searchIndex("search_name", { searchField: "name" }),
 
+  // Meal plans
+  mealPlans: defineTable({
+    date: v.string(), // YYYY-MM-DD
+    meals: v.array(
+      v.object({
+        type: v.string(), // "breakfast" | "lunch" | "dinner"
+        recipeId: v.optional(v.id("recipes")),
+        customMeal: v.optional(v.string()), // for non-recipe meals
+        notes: v.optional(v.string()),
+      })
+    ),
+  }).index("by_date", ["date"]),
+
   // Grocery list items
   groceryList: defineTable({
     name: v.string(),

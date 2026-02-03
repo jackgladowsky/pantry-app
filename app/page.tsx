@@ -25,7 +25,10 @@ import {
   Home,
   ChevronRight,
   Pencil,
-  UtensilsCrossed
+  UtensilsCrossed,
+  CalendarDays,
+  Wand2,
+  ChevronLeft
 } from "lucide-react";
 import { formatDistanceToNow, format, differenceInDays } from "date-fns";
 
@@ -36,7 +39,7 @@ const LOCATIONS = [
   { id: "spices", name: "Spices", icon: Sparkles, color: "from-rose-400 to-pink-500", bg: "bg-rose-500/10" },
 ];
 
-type Tab = "dashboard" | "pantry" | "recipes" | "grocery";
+type Tab = "dashboard" | "pantry" | "recipes" | "planner" | "grocery";
 
 export default function PantryApp() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
@@ -72,6 +75,10 @@ export default function PantryApp() {
                 <BookOpen className="w-4 h-4" />
                 <span className="hidden sm:inline">Recipes</span>
               </NavButton>
+              <NavButton active={activeTab === "planner"} onClick={() => setActiveTab("planner")}>
+                <CalendarDays className="w-4 h-4" />
+                <span className="hidden sm:inline">Plan</span>
+              </NavButton>
               <NavButton active={activeTab === "grocery"} onClick={() => setActiveTab("grocery")}>
                 <ShoppingCart className="w-4 h-4" />
                 <span className="hidden sm:inline">Grocery</span>
@@ -86,6 +93,7 @@ export default function PantryApp() {
         {activeTab === "dashboard" && <Dashboard setActiveTab={setActiveTab} setSelectedRecipe={setSelectedRecipe} />}
         {activeTab === "pantry" && <PantryView />}
         {activeTab === "recipes" && <RecipesView selectedRecipe={selectedRecipe} setSelectedRecipe={setSelectedRecipe} />}
+        {activeTab === "planner" && <MealPlannerView />}
         {activeTab === "grocery" && <GroceryView />}
       </main>
     </div>
@@ -781,6 +789,271 @@ function EditRecipeView({ recipe, onSave, onCancel, onDelete }: { recipe: any; o
           <button onClick={onDelete} className="px-4 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition-colors"><Trash2 className="w-5 h-5" /></button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ============ MEAL PLANNER VIEW ============
+function MealPlannerView() {
+  const recipes = useQuery(api.recipes.list);
+  const pantryItems = useQuery(api.pantry.list);
+  const setMeals = useMutation(api.mealPlans.setMeals);
+  
+  const [weekStart, setWeekStart] = useState(() => {
+    const today = new Date();
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1); // Monday
+    return new Date(today.setDate(diff));
+  });
+  
+  const weekPlans = useQuery(api.mealPlans.getWeek, {
+    startDate: format(weekStart, "yyyy-MM-dd"),
+    endDate: format(new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
+  });
+  
+  const groceryNeeds = useQuery(api.mealPlans.getGroceryList, {
+    startDate: format(weekStart, "yyyy-MM-dd"),
+    endDate: format(new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
+  });
+  
+  const [generating, setGenerating] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [showRecipePicker, setShowRecipePicker] = useState(false);
+  
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+    return {
+      date: format(date, "yyyy-MM-dd"),
+      dayName: format(date, "EEE"),
+      dayNum: format(date, "d"),
+      isToday: format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd"),
+    };
+  });
+  
+  const getMealsForDate = (date: string) => {
+    const plan = weekPlans?.find(p => p.date === date);
+    return plan?.meals || [];
+  };
+  
+  const getRecipeName = (recipeId: string) => {
+    return recipes?.find(r => r._id === recipeId)?.name || "Unknown Recipe";
+  };
+  
+  const generateWeekPlan = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/plan-week", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pantryItems: pantryItems || [],
+          recipes: recipes || [],
+          startDate: format(weekStart, "yyyy-MM-dd"),
+          preferences: "Prefer variety, quick weeknight meals",
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (data.plan) {
+        // Save each day's plan
+        for (const day of data.plan) {
+          const meal = {
+            type: "dinner" as const,
+            recipeId: day.recipeId || undefined,
+            customMeal: day.recipeId ? undefined : day.meal,
+            notes: day.notes || undefined,
+          };
+          await setMeals({ date: day.date, meals: [meal] });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to generate plan:", err);
+    }
+    setGenerating(false);
+  };
+  
+  const addMealToDay = async (date: string, recipeId?: string, customMeal?: string) => {
+    const existingMeals = getMealsForDate(date);
+    const newMeal = {
+      type: "dinner",
+      recipeId: recipeId || undefined,
+      customMeal: customMeal || undefined,
+    };
+    await setMeals({ date, meals: [...existingMeals, newMeal] });
+    setShowRecipePicker(false);
+    setSelectedDay(null);
+  };
+  
+  const removeMealFromDay = async (date: string, index: number) => {
+    const existingMeals = getMealsForDate(date);
+    const newMeals = existingMeals.filter((_, i) => i !== index);
+    await setMeals({ date, meals: newMeals });
+  };
+  
+  const prevWeek = () => setWeekStart(new Date(weekStart.getTime() - 7 * 24 * 60 * 60 * 1000));
+  const nextWeek = () => setWeekStart(new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000));
+  const thisWeek = () => {
+    const today = new Date();
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+    setWeekStart(new Date(today.setDate(diff)));
+  };
+  
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        <div>
+          <h2 className="text-2xl font-bold mb-1">Meal Planner</h2>
+          <p className="text-slate-400">Plan your week, eat what you have</p>
+        </div>
+        <button
+          onClick={generateWeekPlan}
+          disabled={generating}
+          className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 px-5 py-3 rounded-xl font-medium shadow-lg shadow-violet-500/20 transition-all"
+        >
+          {generating ? (
+            <>
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Planning...
+            </>
+          ) : (
+            <>
+              <Wand2 className="w-5 h-5" />
+              AI Plan My Week
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Week Navigation */}
+      <div className="flex items-center justify-between bg-slate-800/40 rounded-xl p-2">
+        <button onClick={prevWeek} className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors">
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <div className="flex items-center gap-4">
+          <span className="font-medium">
+            {format(weekStart, "MMM d")} - {format(new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d, yyyy")}
+          </span>
+          <button onClick={thisWeek} className="text-sm text-green-400 hover:text-green-300">
+            Today
+          </button>
+        </div>
+        <button onClick={nextWeek} className="p-2 hover:bg-slate-700/50 rounded-lg transition-colors">
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Week Grid */}
+      <div className="grid grid-cols-7 gap-2">
+        {days.map((day) => {
+          const meals = getMealsForDate(day.date);
+          return (
+            <div
+              key={day.date}
+              className={`bg-slate-800/40 rounded-xl p-3 min-h-[180px] border transition-all ${
+                day.isToday ? "border-green-400/50 bg-green-500/5" : "border-slate-700/50"
+              }`}
+            >
+              <div className="text-center mb-3">
+                <div className="text-xs text-slate-400">{day.dayName}</div>
+                <div className={`text-lg font-bold ${day.isToday ? "text-green-400" : ""}`}>{day.dayNum}</div>
+              </div>
+              
+              <div className="space-y-2">
+                {meals.map((meal, i) => (
+                  <div key={i} className="group relative bg-slate-700/50 rounded-lg p-2 text-xs">
+                    <div className="font-medium truncate">
+                      {meal.recipeId ? getRecipeName(meal.recipeId) : meal.customMeal}
+                    </div>
+                    {meal.notes && <div className="text-slate-400 truncate">{meal.notes}</div>}
+                    <button
+                      onClick={() => removeMealFromDay(day.date, i)}
+                      className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                
+                <button
+                  onClick={() => { setSelectedDay(day.date); setShowRecipePicker(true); }}
+                  className="w-full py-2 border border-dashed border-slate-600 rounded-lg text-slate-400 hover:border-green-400 hover:text-green-400 transition-colors text-xs"
+                >
+                  + Add
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Grocery Needs for this week */}
+      {groceryNeeds && groceryNeeds.length > 0 && (
+        <div className="bg-slate-800/40 rounded-xl p-4 border border-slate-700/50">
+          <h3 className="font-semibold mb-3 flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 text-green-400" />
+            Shopping list for this week
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {groceryNeeds.map((item, i) => (
+              <span key={i} className="bg-slate-700/50 px-3 py-1 rounded-full text-sm">
+                {item.name} <span className="text-slate-400">({item.quantity})</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recipe Picker Modal */}
+      {showRecipePicker && selectedDay && (
+        <Modal onClose={() => { setShowRecipePicker(false); setSelectedDay(null); }} title="Add Meal">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm text-slate-400 mb-2">Pick a recipe</label>
+              <div className="grid gap-2 max-h-60 overflow-y-auto">
+                {recipes?.map((recipe) => (
+                  <button
+                    key={recipe._id}
+                    onClick={() => addMealToDay(selectedDay, recipe._id)}
+                    className="text-left p-3 bg-slate-700/50 hover:bg-slate-600/50 rounded-xl transition-colors"
+                  >
+                    <div className="font-medium">{recipe.name}</div>
+                    <div className="text-xs text-slate-400">
+                      {recipe.prepTime && recipe.cookTime && `${recipe.prepTime + recipe.cookTime}min`}
+                      {recipe.tags?.length > 0 && ` • ${recipe.tags.slice(0, 2).join(", ")}`}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-slate-700 pt-4">
+              <label className="block text-sm text-slate-400 mb-2">Or add a custom meal</label>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const form = e.target as HTMLFormElement;
+                const input = form.elements.namedItem("customMeal") as HTMLInputElement;
+                if (input.value.trim()) {
+                  addMealToDay(selectedDay, undefined, input.value.trim());
+                }
+              }}>
+                <div className="flex gap-2">
+                  <input
+                    name="customMeal"
+                    type="text"
+                    placeholder="e.g., Takeout sushi"
+                    className="flex-1 bg-slate-800/60 border border-slate-600/50 rounded-xl px-4 py-2 focus:outline-none focus:border-green-400/50"
+                  />
+                  <button type="submit" className="bg-green-500 hover:bg-green-600 px-4 rounded-xl transition-colors">
+                    Add
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
