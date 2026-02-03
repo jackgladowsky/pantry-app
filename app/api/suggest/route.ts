@@ -36,7 +36,7 @@ Keep responses concise and friendly. If they can make one of their saved recipes
         "X-Title": "Pantry App",
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: "google/gemini-flash-1.5-8b",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 500,
       }),

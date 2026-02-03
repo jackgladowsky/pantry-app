@@ -65,7 +65,7 @@ export const generate = action({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3.5-sonnet",
+        model: "google/gemini-flash-1.5-8b",
         messages: [
           {
             role: "system",

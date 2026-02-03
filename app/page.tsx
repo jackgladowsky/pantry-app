@@ -823,6 +823,13 @@ function MealPlannerView() {
   const [generatingMealName, setGeneratingMealName] = useState<string | null>(null);
   const [generatedRecipe, setGeneratedRecipe] = useState<any | null>(null);
   const [loadingRecipe, setLoadingRecipe] = useState(false);
+  const [showPlanSettings, setShowPlanSettings] = useState(false);
+  const [planSettings, setPlanSettings] = useState({
+    eatingOutDays: 1,
+    householdSize: 2,
+    quickWeekdays: true,
+    useExpiring: true,
+  });
   const addRecipe = useMutation(api.recipes.add);
   
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -899,7 +906,16 @@ function MealPlannerView() {
   
   const generateWeekPlan = async () => {
     setGenerating(true);
+    setShowPlanSettings(false);
     try {
+      const preferences = [
+        "Prefer variety",
+        planSettings.quickWeekdays && "Quick meals (under 30min) on weekdays",
+        planSettings.useExpiring && "Prioritize using ingredients that are expiring soon",
+        `Plan for ${planSettings.householdSize} people`,
+        planSettings.eatingOutDays > 0 && `Include ${planSettings.eatingOutDays} eating out / takeout day${planSettings.eatingOutDays > 1 ? 's' : ''}`,
+      ].filter(Boolean).join(". ");
+      
       const res = await fetch("/api/plan-week", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -907,7 +923,9 @@ function MealPlannerView() {
           pantryItems: pantryItems || [],
           recipes: recipes || [],
           startDate: format(weekStart, "yyyy-MM-dd"),
-          preferences: "Prefer variety, quick weeknight meals",
+          preferences,
+          eatingOutDays: planSettings.eatingOutDays,
+          householdSize: planSettings.householdSize,
         }),
       });
       
@@ -967,7 +985,7 @@ function MealPlannerView() {
           <p className="text-slate-400">Plan your week, eat what you have</p>
         </div>
         <button
-          onClick={generateWeekPlan}
+          onClick={() => setShowPlanSettings(true)}
           disabled={generating}
           className="flex items-center gap-2 bg-violet-500 hover:bg-violet-600 disabled:opacity-50 px-5 py-3 rounded-xl font-medium shadow-lg shadow-violet-500/20 transition-all"
         >
@@ -1067,6 +1085,81 @@ function MealPlannerView() {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Plan Settings Modal */}
+      {showPlanSettings && (
+        <Modal onClose={() => setShowPlanSettings(false)} title="Plan Settings">
+          <div className="space-y-5">
+            <div>
+              <label className="block text-sm text-slate-400 mb-2">Household size</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setPlanSettings({ ...planSettings, householdSize: n })}
+                    className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                      planSettings.householdSize === n 
+                        ? "bg-green-500 text-white" 
+                        : "bg-slate-700/50 hover:bg-slate-600/50"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm text-slate-400 mb-2">Eating out / takeout days this week</label>
+              <div className="flex gap-2">
+                {[0, 1, 2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setPlanSettings({ ...planSettings, eatingOutDays: n })}
+                    className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                      planSettings.eatingOutDays === n 
+                        ? "bg-violet-500 text-white" 
+                        : "bg-slate-700/50 hover:bg-slate-600/50"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={planSettings.quickWeekdays}
+                  onChange={(e) => setPlanSettings({ ...planSettings, quickWeekdays: e.target.checked })}
+                  className="w-5 h-5 rounded bg-slate-700 border-slate-600 text-green-500 focus:ring-green-500"
+                />
+                <span>Prefer quick meals (&lt;30 min) on weekdays</span>
+              </label>
+              
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={planSettings.useExpiring}
+                  onChange={(e) => setPlanSettings({ ...planSettings, useExpiring: e.target.checked })}
+                  className="w-5 h-5 rounded bg-slate-700 border-slate-600 text-green-500 focus:ring-green-500"
+                />
+                <span>Prioritize expiring ingredients</span>
+              </label>
+            </div>
+            
+            <button
+              onClick={generateWeekPlan}
+              className="w-full bg-violet-500 hover:bg-violet-600 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              <Wand2 className="w-5 h-5" />
+              Generate Meal Plan
+            </button>
+          </div>
+        </Modal>
       )}
 
       {/* Recipe Picker Modal */}
