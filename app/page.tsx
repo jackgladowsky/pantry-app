@@ -22,6 +22,7 @@ const Icons = {
   users: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
   trash: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>,
   chevronRight: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>,
+  edit: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>,
 };
 
 // ============ MAIN APP ============
@@ -29,6 +30,12 @@ export default function App() {
   const [activeView, setActiveView] = useState<"home" | "pantry" | "recipes" | "plan" | "grocery">("home");
   const [showAddItem, setShowAddItem] = useState(false);
   const [showAddRecipe, setShowAddRecipe] = useState(false);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+
+  const goToRecipe = (recipeId: string) => {
+    setSelectedRecipeId(recipeId);
+    setActiveView("recipes");
+  };
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
@@ -37,7 +44,7 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#7C9A82] rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-[#7C9A82] rounded-xl flex items-center justify-center text-white">
                 <Icons.chef />
               </div>
               <h1 className="text-xl font-bold text-[#2D3436]">Kitchen</h1>
@@ -48,10 +55,10 @@ export default function App() {
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 py-6 pb-24">
-        {activeView === "home" && <HomeView onNavigate={setActiveView} onAddItem={() => setShowAddItem(true)} />}
+        {activeView === "home" && <HomeView onNavigate={setActiveView} onAddItem={() => setShowAddItem(true)} onSelectRecipe={goToRecipe} />}
         {activeView === "pantry" && <PantryView onAddItem={() => setShowAddItem(true)} />}
-        {activeView === "recipes" && <RecipesView onAddRecipe={() => setShowAddRecipe(true)} />}
-        {activeView === "plan" && <PlanView />}
+        {activeView === "recipes" && <RecipesView onAddRecipe={() => setShowAddRecipe(true)} selectedRecipeId={selectedRecipeId} onSelectRecipe={setSelectedRecipeId} />}
+        {activeView === "plan" && <PlanView onSelectRecipe={goToRecipe} />}
         {activeView === "grocery" && <GroceryView />}
       </main>
 
@@ -91,7 +98,7 @@ function NavButton({ active, onClick, icon, label }: { active: boolean; onClick:
 }
 
 // ============ HOME VIEW (Dashboard) ============
-function HomeView({ onNavigate, onAddItem }: { onNavigate: (view: any) => void; onAddItem: () => void }) {
+function HomeView({ onNavigate, onAddItem, onSelectRecipe }: { onNavigate: (view: any) => void; onAddItem: () => void; onSelectRecipe: (id: string) => void }) {
   const pantryItems = useQuery(api.pantry.list);
   const expiring = useQuery(api.pantry.expiringSoon, { withinDays: 5 });
   const recipes = useQuery(api.recipes.canMake);
@@ -190,7 +197,7 @@ function HomeView({ onNavigate, onAddItem }: { onNavigate: (view: any) => void; 
         {readyToMake.length > 0 ? (
           <div className="space-y-3">
             {readyToMake.slice(0, 3).map((recipe) => (
-              <RecipeCard key={recipe._id} recipe={recipe} />
+              <RecipeCard key={recipe._id} recipe={recipe} onClick={() => onSelectRecipe(recipe._id)} />
             ))}
           </div>
         ) : almostReady.length > 0 ? (
@@ -198,7 +205,7 @@ function HomeView({ onNavigate, onAddItem }: { onNavigate: (view: any) => void; 
             <p className="text-[#636E72] text-sm mb-3">You're close! These need just 1-2 more ingredients:</p>
             <div className="space-y-3">
               {almostReady.slice(0, 2).map((recipe) => (
-                <RecipeCard key={recipe._id} recipe={recipe} />
+                <RecipeCard key={recipe._id} recipe={recipe} onClick={() => onSelectRecipe(recipe._id)} />
               ))}
             </div>
           </div>
@@ -259,15 +266,15 @@ function MealCard({ meal, recipes }: { meal: any; recipes: any[] }) {
   );
 }
 
-function RecipeCard({ recipe }: { recipe: any }) {
+function RecipeCard({ recipe, onClick }: { recipe: any; onClick?: () => void }) {
   return (
-    <div className="flex items-center gap-3 bg-[#F8F9FA] rounded-xl p-3 cursor-pointer hover:bg-[#F0F1F2] transition-colors">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${recipe.canMake ? "bg-[#7C9A82] text-white" : "bg-[#E5E5E5] text-[#636E72]"}`}>
+    <div onClick={onClick} className="flex items-center gap-3 bg-[#F8F9FA] rounded-xl p-3 cursor-pointer hover:bg-[#F0F1F2] transition-colors">
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${recipe.canMake ? "bg-[#7C9A82] text-white" : "bg-[#E5E5E5] text-[#636E72]"}`}>
         {recipe.canMake ? <Icons.check /> : <span className="text-sm font-bold">-{recipe.missingCount}</span>}
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <div className="font-medium text-[#2D3436]">{recipe.name}</div>
-        <div className="text-sm text-[#636E72] flex items-center gap-2">
+        <div className="text-sm text-[#636E72] flex items-center gap-2 flex-wrap">
           {recipe.prepTime && recipe.cookTime && (
             <span className="flex items-center gap-1">
               <Icons.clock /> {recipe.prepTime + recipe.cookTime}m
@@ -278,10 +285,13 @@ function RecipeCard({ recipe }: { recipe: any }) {
               <Icons.users /> {recipe.servings}
             </span>
           )}
+          {recipe.tags?.slice(0, 2).map((tag: string) => (
+            <span key={tag} className="bg-[#E8F0E9] text-[#7C9A82] px-2 py-0.5 rounded text-xs">{tag}</span>
+          ))}
         </div>
       </div>
-      {!recipe.canMake && recipe.missing.length > 0 && (
-        <div className="text-xs text-[#C17B5E] bg-[#F5E6E0] px-2 py-1 rounded-lg">
+      {!recipe.canMake && recipe.missing?.length > 0 && (
+        <div className="text-xs text-[#C17B5E] bg-[#F5E6E0] px-2 py-1 rounded-lg flex-shrink-0">
           Need: {recipe.missing.slice(0, 2).join(", ")}
         </div>
       )}
@@ -401,58 +411,74 @@ function PantryItem({ item, onRemove }: { item: any; onRemove: () => void }) {
 }
 
 // ============ RECIPES VIEW ============
-function RecipesView({ onAddRecipe }: { onAddRecipe: () => void }) {
+function RecipesView({ onAddRecipe, selectedRecipeId, onSelectRecipe }: { onAddRecipe: () => void; selectedRecipeId: string | null; onSelectRecipe: (id: string | null) => void }) {
   const recipes = useQuery(api.recipes.canMake);
-  const [selectedRecipe, setSelectedRecipe] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"name" | "time" | "ready">("ready");
+  const [filterTag, setFilterTag] = useState<string | null>(null);
 
-  const recipe = recipes?.find(r => r._id === selectedRecipe);
+  const recipe = recipes?.find(r => r._id === selectedRecipeId);
+  
+  const allTags = [...new Set(recipes?.flatMap(r => r.tags) || [])];
+  
+  const sortedRecipes = [...(recipes || [])].filter(r => !filterTag || r.tags.includes(filterTag)).sort((a, b) => {
+    if (sortBy === "ready") return (a.canMake === b.canMake) ? 0 : a.canMake ? -1 : 1;
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    if (sortBy === "time") return ((a.prepTime || 0) + (a.cookTime || 0)) - ((b.prepTime || 0) + (b.cookTime || 0));
+    return 0;
+  });
 
   if (recipe) {
-    return <RecipeDetail recipe={recipe} onBack={() => setSelectedRecipe(null)} />;
+    return <RecipeDetail recipe={recipe} onBack={() => onSelectRecipe(null)} />;
   }
 
-  const readyToMake = recipes?.filter(r => r.canMake) || [];
-  const needsShopping = recipes?.filter(r => !r.canMake) || [];
+  const readyCount = recipes?.filter(r => r.canMake).length || 0;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-[#2D3436]">Recipes</h2>
-          <p className="text-[#636E72]">{readyToMake.length} ready to cook</p>
+          <p className="text-[#636E72]">{readyCount} ready to cook</p>
         </div>
         <button onClick={onAddRecipe} className="btn-primary !py-3 !px-4">
           <Icons.plus /> Add
         </button>
       </div>
 
-      {readyToMake.length > 0 && (
-        <div>
-          <h3 className="font-semibold text-[#7C9A82] mb-3 flex items-center gap-2">
-            <Icons.check /> Ready to Make
-          </h3>
-          <div className="space-y-3">
-            {readyToMake.map(r => (
-              <div key={r._id} onClick={() => setSelectedRecipe(r._id)} className="cursor-pointer">
-                <RecipeCard recipe={r} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Sort & Filter */}
+      <div className="flex flex-wrap gap-2">
+        <select 
+          value={sortBy} 
+          onChange={(e) => setSortBy(e.target.value as any)}
+          className="!w-auto !py-2 !px-3 text-sm"
+        >
+          <option value="ready">Sort: Ready first</option>
+          <option value="name">Sort: A-Z</option>
+          <option value="time">Sort: Quickest</option>
+        </select>
+        <button 
+          onClick={() => setFilterTag(null)} 
+          className={`px-3 py-2 rounded-lg text-sm font-medium ${!filterTag ? "bg-[#7C9A82] text-white" : "bg-white text-[#636E72]"}`}
+        >
+          All
+        </button>
+        {allTags.slice(0, 5).map(tag => (
+          <button 
+            key={tag}
+            onClick={() => setFilterTag(filterTag === tag ? null : tag)} 
+            className={`px-3 py-2 rounded-lg text-sm font-medium ${filterTag === tag ? "bg-[#7C9A82] text-white" : "bg-white text-[#636E72]"}`}
+          >
+            {tag}
+          </button>
+        ))}
+      </div>
 
-      {needsShopping.length > 0 && (
-        <div>
-          <h3 className="font-semibold text-[#636E72] mb-3">Need Ingredients</h3>
-          <div className="space-y-3">
-            {needsShopping.map(r => (
-              <div key={r._id} onClick={() => setSelectedRecipe(r._id)} className="cursor-pointer">
-                <RecipeCard recipe={r} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Recipe List */}
+      <div className="space-y-3">
+        {sortedRecipes.map(r => (
+          <RecipeCard key={r._id} recipe={r} onClick={() => onSelectRecipe(r._id)} />
+        ))}
+      </div>
 
       {(!recipes || recipes.length === 0) && (
         <div className="card text-center py-12">
@@ -468,12 +494,34 @@ function RecipesView({ onAddRecipe }: { onAddRecipe: () => void }) {
 
 function RecipeDetail({ recipe, onBack }: { recipe: any; onBack: () => void }) {
   const addToGrocery = useMutation(api.groceryList.addFromRecipe);
+  const deleteRecipe = useMutation(api.recipes.remove);
+  const [showDelete, setShowDelete] = useState(false);
+
+  const handleDelete = async () => {
+    await deleteRecipe({ id: recipe._id });
+    onBack();
+  };
 
   return (
     <div className="space-y-6">
-      <button onClick={onBack} className="flex items-center gap-2 text-[#636E72] hover:text-[#2D3436] transition-colors">
-        <Icons.chevronRight /> Back to recipes
-      </button>
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-2 text-[#636E72] hover:text-[#2D3436] transition-colors">
+          <div className="rotate-180"><Icons.chevronRight /></div> Back to recipes
+        </button>
+        <button onClick={() => setShowDelete(true)} className="p-2 text-[#B2BEC3] hover:text-[#E17055] transition-colors">
+          <Icons.trash />
+        </button>
+      </div>
+
+      {showDelete && (
+        <div className="card !bg-[#FFF0F0] !border-[#FFD0D0]">
+          <p className="text-[#2D3436] mb-3">Delete "{recipe.name}"?</p>
+          <div className="flex gap-2">
+            <button onClick={handleDelete} className="btn-secondary !bg-[#E17055] !py-2 !px-4">Delete</button>
+            <button onClick={() => setShowDelete(false)} className="btn-ghost !py-2 !px-4">Cancel</button>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="flex items-start justify-between mb-4">
@@ -570,7 +618,7 @@ function RecipeDetail({ recipe, onBack }: { recipe: any; onBack: () => void }) {
 }
 
 // ============ PLAN VIEW ============
-function PlanView() {
+function PlanView({ onSelectRecipe }: { onSelectRecipe: (id: string) => void }) {
   const [weekStart, setWeekStart] = useState(() => {
     const today = new Date();
     const day = today.getDay();
@@ -585,7 +633,9 @@ function PlanView() {
 
   const recipes = useQuery(api.recipes.list);
   const setMeals = useMutation(api.mealPlans.setMeals);
-  const [generating, setGenerating] = useState(false);
+  const [showComingSoon, setShowComingSoon] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [showAddMeal, setShowAddMeal] = useState(false);
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
@@ -602,38 +652,22 @@ function PlanView() {
     return weekPlans?.find(p => p.date === date)?.meals || [];
   };
 
-  const getRecipeName = (recipeId: string) => {
-    return recipes?.find(r => r._id === recipeId)?.name || "Unknown";
+  const getRecipe = (recipeId: string) => {
+    return recipes?.find(r => r._id === recipeId);
   };
 
-  const generatePlan = async () => {
-    setGenerating(true);
-    try {
-      const res = await fetch("/api/plan-week", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pantryItems: [],
-          recipes: recipes || [],
-          startDate: format(weekStart, "yyyy-MM-dd"),
-          preferences: "Prefer variety, quick weeknight meals",
-        }),
-      });
-      const data = await res.json();
-      if (data.plan) {
-        for (const day of data.plan) {
-          const meal = {
-            type: "dinner" as const,
-            recipeId: day.recipeId || undefined,
-            customMeal: !day.recipeId ? day.meal : undefined,
-          };
-          await setMeals({ date: day.date, meals: [meal] });
-        }
-      }
-    } catch (err) {
-      console.error("Failed to generate plan:", err);
-    }
-    setGenerating(false);
+  const removeMeal = async (date: string, index: number) => {
+    const meals = getMealsForDate(date).filter((_, i) => i !== index);
+    await setMeals({ date, meals: meals as any });
+  };
+
+  const addMealToDay = async (recipeId?: string, customMeal?: string) => {
+    if (!selectedDay) return;
+    const existingMeals = getMealsForDate(selectedDay);
+    const newMeal = { type: "dinner", recipeId, customMeal };
+    await setMeals({ date: selectedDay, meals: [...existingMeals, newMeal] as any });
+    setShowAddMeal(false);
+    setSelectedDay(null);
   };
 
   return (
@@ -643,40 +677,103 @@ function PlanView() {
           <h2 className="text-2xl font-bold text-[#2D3436]">Meal Plan</h2>
           <p className="text-[#636E72]">{format(weekStart, "MMM d")} - {format(new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000), "MMM d")}</p>
         </div>
-        <button onClick={generatePlan} disabled={generating} className="btn-primary !py-3 !px-4">
-          {generating ? "Planning..." : <><Icons.sparkle /> Plan Week</>}
+        <button onClick={() => setShowComingSoon(true)} className="btn-primary !py-3 !px-4 opacity-70">
+          <Icons.sparkle /> AI Plan
         </button>
       </div>
+
+      {showComingSoon && (
+        <div className="card !bg-[#E8F0E9] text-center">
+          <div className="text-2xl mb-2">✨</div>
+          <h3 className="font-semibold text-[#2D3436] mb-1">AI Meal Planning</h3>
+          <p className="text-[#636E72] text-sm mb-3">Coming soon! We're working on smart meal suggestions based on your pantry and preferences.</p>
+          <button onClick={() => setShowComingSoon(false)} className="text-[#7C9A82] text-sm font-medium">Got it</button>
+        </div>
+      )}
 
       <div className="space-y-3">
         {days.map(day => {
           const meals = getMealsForDate(day.date);
           return (
             <div key={day.date} className={`card !p-4 ${day.isToday ? "!border-[#7C9A82] !border-2" : ""}`}>
-              <div className="flex items-center gap-4">
-                <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center ${day.isToday ? "bg-[#7C9A82] text-white" : "bg-[#F8F9FA]"}`}>
+              <div className="flex items-start gap-4">
+                <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0 ${day.isToday ? "bg-[#7C9A82] text-white" : "bg-[#F8F9FA]"}`}>
                   <div className="text-xs font-medium">{day.dayName}</div>
                   <div className="text-xl font-bold">{day.dayNum}</div>
                 </div>
                 <div className="flex-1">
                   {meals.length > 0 ? (
-                    <div>
-                      {meals.map((meal, i) => (
-                        <div key={i} className="font-medium text-[#2D3436]">
-                          {meal.recipeId ? getRecipeName(meal.recipeId) : meal.customMeal}
-                        </div>
-                      ))}
+                    <div className="space-y-2">
+                      {meals.map((meal, i) => {
+                        const recipe = meal.recipeId ? getRecipe(meal.recipeId) : null;
+                        return (
+                          <div key={i} className="flex items-center gap-2 group">
+                            <div 
+                              className={`flex-1 ${recipe ? "text-[#7C9A82] cursor-pointer hover:underline" : "text-[#2D3436]"}`}
+                              onClick={() => recipe && onSelectRecipe(recipe._id)}
+                            >
+                              {recipe?.name || meal.customMeal}
+                            </div>
+                            <button 
+                              onClick={() => removeMeal(day.date, i)}
+                              className="p-1 text-[#B2BEC3] hover:text-[#E17055] opacity-0 group-hover:opacity-100 transition-all"
+                            >
+                              <Icons.x />
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="text-[#B2BEC3]">No meal planned</div>
                   )}
+                  <button 
+                    onClick={() => { setSelectedDay(day.date); setShowAddMeal(true); }}
+                    className="text-sm text-[#7C9A82] mt-2 hover:underline"
+                  >
+                    + Add meal
+                  </button>
                 </div>
-                <Icons.chevronRight />
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Add Meal Modal */}
+      {showAddMeal && selectedDay && (
+        <Modal onClose={() => { setShowAddMeal(false); setSelectedDay(null); }} title="Add Meal">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-[#636E72] mb-2">Pick a recipe</label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {recipes?.map(recipe => (
+                  <button
+                    key={recipe._id}
+                    onClick={() => addMealToDay(recipe._id)}
+                    className="w-full text-left p-3 bg-[#F8F9FA] hover:bg-[#E8F0E9] rounded-xl transition-colors"
+                  >
+                    {recipe.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="border-t border-gray-100 pt-4">
+              <label className="block text-sm font-medium text-[#636E72] mb-2">Or add custom meal</label>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const input = (e.target as HTMLFormElement).elements.namedItem("custom") as HTMLInputElement;
+                if (input.value.trim()) addMealToDay(undefined, input.value.trim());
+              }}>
+                <div className="flex gap-2">
+                  <input name="custom" type="text" placeholder="e.g., Takeout Thai" className="flex-1" />
+                  <button type="submit" className="btn-primary !py-3 !px-4">Add</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
