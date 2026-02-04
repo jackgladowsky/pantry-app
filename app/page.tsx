@@ -304,6 +304,7 @@ function PantryView({ onAddItem }: { onAddItem: () => void }) {
   const items = useQuery(api.pantry.list);
   const removeItem = useMutation(api.pantry.remove);
   const [activeLocation, setActiveLocation] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<any | null>(null);
 
   const locations = [
     { id: "fridge", label: "Fridge", emoji: "🥬" },
@@ -367,7 +368,7 @@ function PantryView({ onAddItem }: { onAddItem: () => void }) {
             )}
             <div className="space-y-2">
               {group.items.map(item => (
-                <PantryItem key={item._id} item={item} onRemove={() => removeItem({ id: item._id })} />
+                <PantryItem key={item._id} item={item} onRemove={() => removeItem({ id: item._id })} onEdit={() => setEditingItem(item)} />
               ))}
             </div>
           </div>
@@ -382,11 +383,14 @@ function PantryView({ onAddItem }: { onAddItem: () => void }) {
           <button onClick={onAddItem} className="btn-primary">Add First Item</button>
         </div>
       )}
+
+      {/* Edit Modal */}
+      {editingItem && <EditItemModal item={editingItem} onClose={() => setEditingItem(null)} />}
     </div>
   );
 }
 
-function PantryItem({ item, onRemove }: { item: any; onRemove: () => void }) {
+function PantryItem({ item, onRemove, onEdit }: { item: any; onRemove: () => void; onEdit: () => void }) {
   const isExpiringSoon = item.expiresAt && (item.expiresAt - Date.now()) < 5 * 24 * 60 * 60 * 1000;
   const isExpired = item.expiresAt && item.expiresAt < Date.now();
 
@@ -403,6 +407,9 @@ function PantryItem({ item, onRemove }: { item: any; onRemove: () => void }) {
           )}
         </div>
       </div>
+      <button onClick={onEdit} className="p-2 text-[#B2BEC3] hover:text-[#7C9A82] transition-colors">
+        <Icons.edit />
+      </button>
       <button onClick={onRemove} className="p-2 text-[#B2BEC3] hover:text-[#E17055] transition-colors">
         <Icons.trash />
       </button>
@@ -496,11 +503,16 @@ function RecipeDetail({ recipe, onBack }: { recipe: any; onBack: () => void }) {
   const addToGrocery = useMutation(api.groceryList.addFromRecipe);
   const deleteRecipe = useMutation(api.recipes.remove);
   const [showDelete, setShowDelete] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
 
   const handleDelete = async () => {
     await deleteRecipe({ id: recipe._id });
     onBack();
   };
+
+  if (showEdit) {
+    return <EditRecipeForm recipe={recipe} onBack={() => setShowEdit(false)} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -508,9 +520,14 @@ function RecipeDetail({ recipe, onBack }: { recipe: any; onBack: () => void }) {
         <button onClick={onBack} className="flex items-center gap-2 text-[#636E72] hover:text-[#2D3436] transition-colors">
           <div className="rotate-180"><Icons.chevronRight /></div> Back to recipes
         </button>
-        <button onClick={() => setShowDelete(true)} className="p-2 text-[#B2BEC3] hover:text-[#E17055] transition-colors">
-          <Icons.trash />
-        </button>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setShowEdit(true)} className="p-2 text-[#B2BEC3] hover:text-[#7C9A82] transition-colors">
+            <Icons.edit />
+          </button>
+          <button onClick={() => setShowDelete(true)} className="p-2 text-[#B2BEC3] hover:text-[#E17055] transition-colors">
+            <Icons.trash />
+          </button>
+        </div>
       </div>
 
       {showDelete && (
@@ -945,6 +962,69 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function EditItemModal({ item, onClose }: { item: any; onClose: () => void }) {
+  const updateItem = useMutation(api.pantry.update);
+  const [name, setName] = useState(item.name);
+  const [quantity, setQuantity] = useState(item.quantity || "");
+  const [location, setLocation] = useState(item.location);
+  const [expiresDate, setExpiresDate] = useState(
+    item.expiresAt ? format(new Date(item.expiresAt), "yyyy-MM-dd") : ""
+  );
+
+  const handleSubmit = async () => {
+    if (!name.trim()) return;
+    await updateItem({
+      id: item._id,
+      name: name.trim(),
+      quantity: quantity || undefined,
+      location,
+      expiresAt: expiresDate ? new Date(expiresDate).getTime() : undefined,
+    });
+    onClose();
+  };
+
+  return (
+    <Modal onClose={onClose} title="Edit Item">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-[#636E72] mb-2">Item name</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-[#636E72] mb-2">Quantity</label>
+          <input type="text" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="e.g., 1 lb" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-[#636E72] mb-2">Location</label>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { id: "fridge", label: "Fridge", emoji: "🥬" },
+              { id: "freezer", label: "Freezer", emoji: "🧊" },
+              { id: "pantry", label: "Pantry", emoji: "🥫" },
+              { id: "spices", label: "Spices", emoji: "🌶️" },
+            ].map(loc => (
+              <button
+                key={loc.id}
+                type="button"
+                onClick={() => setLocation(loc.id)}
+                className={`p-3 rounded-xl text-center transition-all ${location === loc.id ? "bg-[#7C9A82] text-white" : "bg-[#F8F9FA]"}`}
+              >
+                <div className="text-xl">{loc.emoji}</div>
+                <div className="text-xs mt-1">{loc.label}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-[#636E72] mb-2">Expiration date</label>
+          <input type="date" value={expiresDate} onChange={(e) => setExpiresDate(e.target.value)} />
+        </div>
+        <button onClick={handleSubmit} className="btn-primary w-full">Save Changes</button>
+      </div>
+    </Modal>
+  );
+}
+
 function AddRecipeModal({ onClose }: { onClose: () => void }) {
   const addRecipe = useMutation(api.recipes.add);
   const [name, setName] = useState("");
@@ -994,6 +1074,121 @@ function AddRecipeModal({ onClose }: { onClose: () => void }) {
         <button onClick={handleSubmit} className="btn-primary w-full">Add Recipe</button>
       </div>
     </Modal>
+  );
+}
+
+function EditRecipeForm({ recipe, onBack }: { recipe: any; onBack: () => void }) {
+  const updateRecipe = useMutation(api.recipes.update);
+  const [name, setName] = useState(recipe.name);
+  const [source, setSource] = useState(recipe.source || "");
+  const [servings, setServings] = useState(recipe.servings?.toString() || "");
+  const [prepTime, setPrepTime] = useState(recipe.prepTime?.toString() || "");
+  const [cookTime, setCookTime] = useState(recipe.cookTime?.toString() || "");
+  const [tags, setTags] = useState(recipe.tags?.join(", ") || "");
+  const [notes, setNotes] = useState(recipe.notes || "");
+  const [ingredients, setIngredients] = useState(
+    recipe.ingredients?.map((i: any) => `${i.quantity} ${i.name}${i.optional ? " (optional)" : ""}`).join("\n") || ""
+  );
+  const [instructions, setInstructions] = useState(recipe.instructions?.join("\n\n") || "");
+
+  const handleSubmit = async () => {
+    if (!name.trim()) return;
+    
+    const parsedIngredients = ingredients.split("\n").filter((l: string) => l.trim()).map((line: string) => {
+      const isOptional = line.includes("(optional)");
+      const cleanLine = line.replace("(optional)", "").trim();
+      const match = cleanLine.match(/^([\d\/\s\w]+?)\s+(.+)$/);
+      return match 
+        ? { name: match[2].trim(), quantity: match[1].trim(), optional: isOptional || undefined } 
+        : { name: cleanLine, quantity: "", optional: isOptional || undefined };
+    });
+
+    await updateRecipe({
+      id: recipe._id,
+      name: name.trim(),
+      source: source || undefined,
+      servings: servings ? parseInt(servings) : undefined,
+      prepTime: prepTime ? parseInt(prepTime) : undefined,
+      cookTime: cookTime ? parseInt(cookTime) : undefined,
+      tags: tags.split(",").map((t: string) => t.trim()).filter(Boolean),
+      notes: notes || undefined,
+      ingredients: parsedIngredients,
+      instructions: instructions.split("\n\n").filter((s: string) => s.trim()),
+    });
+    onBack();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="flex items-center gap-2 text-[#636E72] hover:text-[#2D3436] transition-colors">
+          <div className="rotate-180"><Icons.chevronRight /></div> Cancel
+        </button>
+        <h2 className="text-xl font-bold text-[#2D3436]">Edit Recipe</h2>
+        <div className="w-16" />
+      </div>
+
+      <div className="card space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-[#636E72] mb-2">Recipe name</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-[#636E72] mb-2">Source (URL or book)</label>
+          <input type="text" value={source} onChange={(e) => setSource(e.target.value)} placeholder="https://..." />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-[#636E72] mb-2">Servings</label>
+            <input type="number" value={servings} onChange={(e) => setServings(e.target.value)} placeholder="4" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#636E72] mb-2">Prep (min)</label>
+            <input type="number" value={prepTime} onChange={(e) => setPrepTime(e.target.value)} placeholder="15" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#636E72] mb-2">Cook (min)</label>
+            <input type="number" value={cookTime} onChange={(e) => setCookTime(e.target.value)} placeholder="30" />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-[#636E72] mb-2">Tags (comma-separated)</label>
+          <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="quick, weeknight, healthy" />
+        </div>
+      </div>
+
+      <div className="card">
+        <label className="block text-sm font-medium text-[#636E72] mb-2">Ingredients (one per line)</label>
+        <textarea 
+          value={ingredients} 
+          onChange={(e) => setIngredients(e.target.value)} 
+          placeholder={"1 lb chicken breast\n2 cups broccoli\n1 tbsp olive oil (optional)"}
+          rows={8}
+        />
+        <p className="text-xs text-[#B2BEC3] mt-1">Format: "quantity ingredient" — add (optional) for optional items</p>
+      </div>
+
+      <div className="card">
+        <label className="block text-sm font-medium text-[#636E72] mb-2">Instructions (separate steps with blank line)</label>
+        <textarea 
+          value={instructions} 
+          onChange={(e) => setInstructions(e.target.value)} 
+          rows={10}
+        />
+      </div>
+
+      <div className="card">
+        <label className="block text-sm font-medium text-[#636E72] mb-2">Notes</label>
+        <textarea 
+          value={notes} 
+          onChange={(e) => setNotes(e.target.value)} 
+          placeholder="Tips, variations, etc."
+          rows={3}
+        />
+      </div>
+
+      <button onClick={handleSubmit} className="btn-primary w-full">Save Changes</button>
+    </div>
   );
 }
 

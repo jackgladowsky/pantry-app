@@ -111,6 +111,28 @@ const commands = {
     console.log("✓ Used item");
   },
 
+  async edit() {
+    const id = args[0];
+    if (!id) {
+      console.error("Usage: pantry edit <id> [--name=X] [--qty=X] [--location=X] [--expires=YYYY-MM-DD]");
+      process.exit(1);
+    }
+
+    const name = args.find(a => a.startsWith("--name="))?.split("=")[1];
+    const quantity = args.find(a => a.startsWith("--qty="))?.split("=")[1];
+    const location = args.find(a => a.startsWith("--location="))?.split("=")[1];
+    const expiresStr = args.find(a => a.startsWith("--expires="))?.split("=")[1];
+    const expiresAt = expiresStr ? new Date(expiresStr).getTime() : undefined;
+
+    if (!name && !quantity && !location && !expiresAt) {
+      console.error("Provide at least one field to update");
+      process.exit(1);
+    }
+
+    await client.mutation(api.pantry.update, { id, name, quantity, location, expiresAt });
+    console.log("✓ Updated item");
+  },
+
   // === RECIPES ===
   async recipes() {
     const subcommand = args[0];
@@ -169,6 +191,93 @@ const commands = {
       recipe.instructions.forEach((step, i) => {
         console.log(`  ${i + 1}. ${step}`);
       });
+    } else if (subcommand === "add") {
+      // Interactive-ish recipe add using JSON file or inline
+      const jsonPath = args.find(a => a.startsWith("--json="))?.split("=")[1];
+      
+      if (jsonPath) {
+        const fs = await import("fs/promises");
+        const data = JSON.parse(await fs.readFile(jsonPath, "utf-8"));
+        const id = await client.mutation(api.recipes.add, {
+          name: data.name,
+          source: data.source,
+          servings: data.servings,
+          prepTime: data.prepTime,
+          cookTime: data.cookTime,
+          tags: data.tags || [],
+          ingredients: data.ingredients || [],
+          instructions: data.instructions || [],
+          notes: data.notes,
+        });
+        console.log(`✓ Added recipe: ${data.name} (${id})`);
+      } else {
+        console.error("Usage: pantry recipes add --json=recipe.json");
+        console.log(`
+Example recipe.json:
+{
+  "name": "Pasta",
+  "source": "https://...",
+  "servings": 4,
+  "prepTime": 10,
+  "cookTime": 20,
+  "tags": ["italian", "quick"],
+  "ingredients": [
+    { "name": "pasta", "quantity": "1 lb" },
+    { "name": "garlic", "quantity": "3 cloves", "optional": true }
+  ],
+  "instructions": [
+    "Boil water",
+    "Cook pasta"
+  ]
+}`);
+        process.exit(1);
+      }
+    } else if (subcommand === "edit") {
+      const id = args[1];
+      if (!id) {
+        console.error("Usage: pantry recipes edit <id> [--name=X] [--json=updates.json]");
+        process.exit(1);
+      }
+
+      const name = args.find(a => a.startsWith("--name="))?.split("=")[1];
+      const jsonPath = args.find(a => a.startsWith("--json="))?.split("=")[1];
+      const tagsStr = args.find(a => a.startsWith("--tags="))?.split("=")[1];
+      const tags = tagsStr ? tagsStr.split(",") : undefined;
+      const servings = args.find(a => a.startsWith("--servings="))?.split("=")[1];
+      const prepTime = args.find(a => a.startsWith("--prep="))?.split("=")[1];
+      const cookTime = args.find(a => a.startsWith("--cook="))?.split("=")[1];
+      const source = args.find(a => a.startsWith("--source="))?.split("=")[1];
+
+      let updates = { id };
+      
+      if (jsonPath) {
+        const fs = await import("fs/promises");
+        const data = JSON.parse(await fs.readFile(jsonPath, "utf-8"));
+        updates = { id, ...data };
+      } else {
+        if (name) updates.name = name;
+        if (tags) updates.tags = tags;
+        if (servings) updates.servings = parseInt(servings);
+        if (prepTime) updates.prepTime = parseInt(prepTime);
+        if (cookTime) updates.cookTime = parseInt(cookTime);
+        if (source) updates.source = source;
+      }
+
+      if (Object.keys(updates).length <= 1) {
+        console.error("Provide fields to update or use --json=file.json");
+        process.exit(1);
+      }
+
+      await client.mutation(api.recipes.update, updates);
+      console.log("✓ Updated recipe");
+    } else if (subcommand === "rm" || subcommand === "delete") {
+      const id = args[1];
+      if (!id) {
+        console.error("Usage: pantry recipes rm <id>");
+        process.exit(1);
+      }
+      await client.mutation(api.recipes.remove, { id });
+      console.log("✓ Deleted recipe");
     } else {
       // List all recipes
       const recipes = await client.query(api.recipes.list);
@@ -178,7 +287,7 @@ const commands = {
       }
       for (const r of recipes) {
         const tags = r.tags.length ? ` [${r.tags.join(", ")}]` : "";
-        console.log(`• ${r.name}${tags}`);
+        console.log(`• ${r.name}${tags} (${r._id})`);
       }
     }
   },
@@ -417,6 +526,7 @@ PANTRY:
   pantry list [--location=fridge|freezer|pantry|spices]
   pantry expiring [--days=7]
   pantry add <name> [--qty=X] [--location=X] [--expires=YYYY-MM-DD]
+  pantry edit <id> [--name=X] [--qty=X] [--location=X] [--expires=YYYY-MM-DD]
   pantry rm <id>
   pantry use <id>
 
@@ -425,6 +535,9 @@ RECIPES:
   pantry recipes search <query>     Search recipes
   pantry recipes view <id>          View recipe details
   pantry recipes can-make           What can I cook with current pantry?
+  pantry recipes add --json=file    Add recipe from JSON file
+  pantry recipes edit <id> [opts]   Edit recipe (--name, --tags, --servings, etc or --json)
+  pantry recipes rm <id>            Delete recipe
 
 GROCERY:
   pantry grocery                    Show grocery list
