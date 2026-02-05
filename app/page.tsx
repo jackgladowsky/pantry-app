@@ -540,6 +540,26 @@ function RecipeDetail({ recipe, onBack }: { recipe: any; onBack: () => void }) {
   const addToGrocery = useMutation(api.groceryList.addFromRecipe);
   const deleteRecipe = useMutation(api.recipes.remove);
   const [showDelete, setShowDelete] = useState(false);
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
+  const [checkedSteps, setCheckedSteps] = useState<Set<number>>(new Set());
+
+  const toggleIngredient = (index: number) => {
+    setCheckedIngredients(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const toggleStep = (index: number) => {
+    setCheckedSteps(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
 
   const handleDelete = async () => {
     await deleteRecipe({ id: recipe._id });
@@ -616,16 +636,21 @@ function RecipeDetail({ recipe, onBack }: { recipe: any; onBack: () => void }) {
         <div className="space-y-2">
           {recipe.ingredients.map((ing: any, i: number) => {
             const have = !recipe.missing.includes(ing.name);
+            const isChecked = checkedIngredients.has(i);
             return (
-              <div key={i} className={`flex items-center gap-3 p-3 rounded-xl ${have ? "bg-[var(--secondary-wash)]" : "bg-[var(--surface-2)]"}`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${have ? "bg-[var(--secondary)] text-white" : "border-2 border-[var(--text-muted)]"}`}>
-                  {have && <Check size={14} />}
+              <button 
+                key={i} 
+                onClick={() => toggleIngredient(i)}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${isChecked ? "bg-[var(--secondary-wash)]" : have ? "bg-[var(--secondary-wash)]/50" : "bg-[var(--surface-2)]"}`}
+              >
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${isChecked ? "bg-[var(--secondary)] text-white" : have ? "border-2 border-[var(--secondary)]" : "border-2 border-[var(--text-muted)]"}`}>
+                  {isChecked && <Check size={14} />}
                 </div>
-                <span className={ing.optional ? "text-[var(--text-secondary)]" : "text-[var(--text-primary)]"}>
+                <span className={`text-left ${isChecked ? "line-through text-[var(--text-muted)]" : ing.optional ? "text-[var(--text-secondary)]" : "text-[var(--text-primary)]"}`}>
                   {ing.quantity} {ing.name}
                 </span>
                 {ing.optional && <span className="text-[var(--text-muted)] text-sm">(optional)</span>}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -642,14 +667,19 @@ function RecipeDetail({ recipe, onBack }: { recipe: any; onBack: () => void }) {
       <div className="card-surface">
         <h3 className="font-semibold text-[var(--text-primary)] mb-4">Instructions</h3>
         <ol className="space-y-4">
-          {recipe.instructions.map((step: string, i: number) => (
-            <li key={i} className="flex gap-4">
-              <span className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] text-white flex items-center justify-center text-sm font-bold flex-shrink-0">
-                {i + 1}
-              </span>
-              <p className="text-[var(--text-primary)] pt-1">{step}</p>
-            </li>
-          ))}
+          {recipe.instructions.map((step: string, i: number) => {
+            const isDone = checkedSteps.has(i);
+            return (
+              <li key={i}>
+                <button onClick={() => toggleStep(i)} className="w-full flex gap-4 text-left transition-all">
+                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 transition-all ${isDone ? "bg-[var(--secondary)] text-white" : "bg-gradient-to-br from-[var(--primary)] to-[var(--accent)] text-white"}`}>
+                    {isDone ? <Check size={16} /> : i + 1}
+                  </span>
+                  <p className={`pt-1 transition-all ${isDone ? "line-through text-[var(--text-muted)]" : "text-[var(--text-primary)]"}`}>{step}</p>
+                </button>
+              </li>
+            );
+          })}
         </ol>
       </div>
 
