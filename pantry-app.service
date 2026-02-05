@@ -1,0 +1,16 @@
+[Unit]
+Description=Pantry App
+After=network.target
+
+[Service]
+Type=simple
+User=jack
+WorkingDirectory=/home/jack/pantry-app
+ExecStart=/usr/bin/npm run start
+Restart=on-failure
+RestartSec=10
+Environment=NODE_ENV=production
+EnvironmentFile=/home/jack/pantry-app/.env.local
+
+[Install]
+WantedBy=default.target
